@@ -11,10 +11,10 @@
 
 - **Real-Time Voice Conversation**: Low-latency, full-duplex voice interaction using Gemini Live.
 - **Dynamic Rivalry System**: Choose from curated pairs of guests with distinct personalities, voices, and system instructions.
-- **RAG (Retrieval-Augmented Generation)**: Upload documents (PDF, TXT) that guests can "read" and cite during the debate.
 - **Audio Visualization**: Real-time waveform visualization for both the host and AI guests.
 - **Live Transcription**: Scrollable transcript of the conversation for accessibility and review.
 - **Broadcast Quality UI**: Modern, dark-mode aesthetic with smooth animations and responsive design.
+- **Landing Password Gate**: Optional password protection for private demos.
 
 ## 🎭 Featured Rivalries
 
@@ -37,8 +37,8 @@
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/yourusername/the-neural-forum.git
-    cd the-neural-forum
+    git clone https://github.com/ppilafas/silicon_smackdown.git
+    cd silicon_smackdown
     ```
 
 2.  **Install dependencies:**
@@ -50,6 +50,8 @@
     Create a `.env.local` file in the root directory and add your API key:
     ```env
     VITE_API_KEY=your_gemini_api_key_here
+    # Optional landing password gate
+    VITE_LANDING_PASSWORD=your_password_here
     ```
 
 4.  **Run Locally:**
@@ -66,7 +68,7 @@
 - **AI/ML**: Google GenAI SDK (Gemini Live API)
 - **Audio**: Web Audio API, AudioWorklet
 - **Styling**: Tailwind CSS
-- **Utilities**: PDF.js (for document processing)
+- **Utilities**: i18next (i18n)
 
 ## 📄 License
 
