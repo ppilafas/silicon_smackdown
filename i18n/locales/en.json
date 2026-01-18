@@ -1,0 +1,49 @@
+{
+  "splash": {
+    "title": "Silicon Smackdown",
+    "subtitle": "AI Talk Show • Powered by Gemini Live",
+    "tagline": "Host real-time voice battles between legendary personalities.",
+    "taglineHighlight": "You're the moderator. They're the rivals.",
+    "features": {
+      "liveVoiceAI": {
+        "title": "Live Voice AI",
+        "description": "Real-time conversations with AI guests using Gemini's native audio."
+      },
+      "epicRivalries": {
+        "title": "Epic Rivalries",
+        "description": "Choose from legendary matchups: philosophers, scientists, fictional icons."
+      },
+      "youModerate": {
+        "title": "You Moderate",
+        "description": "Steer the debate, ask questions, or let them roast each other."
+      }
+    },
+    "enterButton": "Enter the Arena",
+    "requirements": "Requires microphone access • Best with headphones"
+  },
+  "header": {
+    "title": "Silicon Smackdown",
+    "version": "V1.5 Rivalry Edition"
+  },
+  "controls": {
+    "startDiscussion": "Start Discussion",
+    "shutDown": "Shut Down",
+    "pause": "Pause",
+    "play": "Play"
+  },
+  "footer": {
+    "liveFeed": "Live Feed",
+    "hostInput": {
+      "title": "Host Input",
+      "placeholder": "Type a host prompt to steer the debate...",
+      "send": "Send"
+    }
+  },
+  "guestCard": {
+    "thinking": "Thinking"
+  },
+  "guestSelector": {
+    "select": "Select",
+    "selected": "Selected"
+  }
+}

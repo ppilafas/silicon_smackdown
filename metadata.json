@@ -1,0 +1,8 @@
+
+{
+  "name": "Silicon Smackdown",
+  "description": "Host your own AI talk show. Moderate real-time battles between legendary personalities like Socrates, Stephen Hawking, and God vs Satan, powered by the Gemini Live API.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
