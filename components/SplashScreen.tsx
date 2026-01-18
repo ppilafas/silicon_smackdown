@@ -37,7 +37,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center p-8 overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center px-4 py-10 md:p-8 overflow-x-hidden overflow-y-auto">
       {/* Animated background glow */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-600/20 rounded-full blur-[120px] animate-pulse" />
@@ -55,26 +55,26 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         </div>
 
         {/* Logo / Title */}
-        <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-white uppercase italic mb-4 animate-fade-in">
+        <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter text-white uppercase italic mb-4 animate-fade-in">
           {t('splash.title').split(' ')[0]}{' '}
           <span className="text-indigo-500 animate-title-glow">{t('splash.title').split(' ').slice(1).join(' ')}</span>
         </h1>
         
-        <p className="text-slate-400 text-sm uppercase tracking-[0.3em] mb-8 animate-fade-in-delay-1 flex items-center justify-center gap-2">
+        <p className="text-slate-400 text-[11px] sm:text-sm uppercase tracking-[0.3em] mb-6 sm:mb-8 animate-fade-in-delay-1 flex items-center justify-center gap-2">
           <Sparkles className="w-4 h-4 text-indigo-400 animate-sparkle" />
           {t('splash.subtitle')}
           <Sparkles className="w-4 h-4 text-indigo-400 animate-sparkle" style={{ animationDelay: '0.3s' }} />
         </p>
 
         {/* Tagline */}
-        <p className="text-xl md:text-2xl text-slate-300 mb-12 leading-relaxed animate-fade-in-delay-2">
+        <p className="text-lg sm:text-xl md:text-2xl text-slate-300 mb-8 sm:mb-12 leading-relaxed animate-fade-in-delay-2">
           {t('splash.tagline')}
           <br />
           <span className="text-indigo-400">{t('splash.taglineHighlight')}</span>
         </p>
 
         {/* Features */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 animate-fade-in-delay-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-10 sm:mb-12 animate-fade-in-delay-3">
           <div className="group bg-slate-900/60 border border-slate-800 rounded-2xl p-6 hover:border-indigo-500/50 hover:bg-slate-900/80 transition-all duration-300">
             <div className="relative w-14 h-14 mx-auto mb-4 flex items-center justify-center">
               <div className="absolute inset-0 bg-indigo-500/20 rounded-full animate-ping-slow" />
@@ -123,7 +123,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
           )}
           <button
             onClick={handleEnter}
-            className="group relative px-12 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold uppercase tracking-widest text-sm rounded-full transition-all shadow-2xl shadow-indigo-500/30 hover:shadow-indigo-500/50 active:scale-95 animate-fade-in-delay-4 overflow-hidden"
+            className="group relative px-10 sm:px-12 py-3.5 sm:py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold uppercase tracking-widest text-[11px] sm:text-sm rounded-full transition-all shadow-2xl shadow-indigo-500/30 hover:shadow-indigo-500/50 active:scale-95 animate-fade-in-delay-4 overflow-hidden"
           >
           <span className="relative z-10 flex items-center gap-2">
             <Zap className="w-4 h-4 animate-zap" />
@@ -135,7 +135,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
           </button>
         </div>
 
-        <p className="text-slate-600 text-xs mt-6 animate-fade-in-delay-4 flex items-center justify-center gap-2">
+        <p className="text-slate-600 text-[11px] sm:text-xs mt-6 animate-fade-in-delay-4 flex items-center justify-center gap-2">
           <Mic className="w-3 h-3" />
           {t('splash.requirements')}
         </p>

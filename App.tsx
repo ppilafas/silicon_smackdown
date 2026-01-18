@@ -853,7 +853,7 @@ const App: React.FC = () => {
         />
       )}
       
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-between p-4 md:p-8 overflow-hidden relative pt-24 md:pt-28">
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-between p-4 md:p-8 overflow-x-hidden relative pt-24 md:pt-28">
         <header className="fixed top-0 inset-x-0 z-20 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl">
           <div className="w-full max-w-6xl mx-auto flex justify-between items-center px-4 md:px-8 py-4">
             <div>
