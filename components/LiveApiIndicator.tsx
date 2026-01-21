@@ -10,7 +10,7 @@ interface LiveApiIndicatorProps {
 }
 
 export const LiveApiIndicator: React.FC<LiveApiIndicatorProps> = ({ status, sessions, totalGuests }) => {
-  const sessionStates = Object.values(sessions);
+  const sessionStates: LiveSessionState[] = Object.values(sessions);
   const connectedCount = sessionStates.filter(s => s.isActive).length;
   const connectingCount = sessionStates.filter(s => s.isConnecting).length;
   const errorCount = sessionStates.filter(s => s.error).length;

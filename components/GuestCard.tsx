@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GuestProfile, LiveSessionState } from '../types';
 import { Visualizer } from './Visualizer';
+import { getAvatarUrl, getFallbackAvatarUrl } from '../utils/avatars';
 
 interface GuestCardProps {
   guest: GuestProfile;
@@ -12,11 +13,33 @@ interface GuestCardProps {
 
 export const GuestCard: React.FC<GuestCardProps> = ({ guest, state, analyserNode, isAwaitingAudio }) => {
   const { t } = useTranslation();
+  const [avatarUrl, setAvatarUrl] = useState<string>('');
+  const [fallbackUrl, setFallbackUrl] = useState<string>('');
+  const [avatarError, setAvatarError] = useState<boolean>(false);
+  
   const isSpeaking = state?.isSpeaking || false;
   const isConnecting = state?.isConnecting || false;
   const isActive = state?.isActive || false;
   const error = state?.error;
   const isThinking = isAwaitingAudio && !isSpeaking && !isConnecting && !error;
+
+  // Load avatar URL when component mounts
+  useEffect(() => {
+    console.log('[GuestCard] Mounting for guest:', guest.name);
+    try {
+      const primaryUrl = getAvatarUrl(guest.name);
+      const fallbackUrl = getFallbackAvatarUrl(guest.name);
+      console.log(`[GuestCard] Primary avatar URL for ${guest.name}:`, primaryUrl);
+      console.log(`[GuestCard] Fallback avatar URL for ${guest.name}:`, fallbackUrl);
+      setAvatarUrl(primaryUrl);
+      setFallbackUrl(fallbackUrl);
+      setAvatarError(false);
+      console.log(`[GuestCard] Avatar state set for ${guest.name}, avatarError:`, false);
+    } catch (error) {
+      console.error('[GuestCard] Failed to load avatar:', error);
+      setAvatarError(true);
+    }
+  }, [guest.name]);
 
   return (
     <div className={`p-8 rounded-[2.5rem] border transition-all duration-500 bg-slate-900/40 backdrop-blur-md relative overflow-hidden group ${
@@ -32,10 +55,30 @@ export const GuestCard: React.FC<GuestCardProps> = ({ guest, state, analyserNode
       )}
 
       <div className="relative flex flex-col items-center">
-        <div className={`relative mb-8 w-28 h-28 rounded-full flex items-center justify-center ${guest.avatarColor} border-4 transition-all duration-500 ${
+        <div className={`relative mb-8 w-28 h-28 rounded-full overflow-hidden border-4 transition-all duration-500 ${
           isSpeaking ? 'border-emerald-400 scale-105 ring-8 ring-emerald-500/10' : 'border-slate-800'
         } ${error ? 'border-red-500 animate-pulse' : ''}`}>
-          <span className="text-3xl font-black text-white/90">{guest.name[0]}</span>
+          {!avatarError ? (
+            <img 
+              src={avatarUrl} 
+              alt={`${guest.name} avatar`}
+              className="w-full h-full object-cover"
+              onLoad={() => console.log(`Avatar loaded for ${guest.name}`)}
+              onError={(e) => {
+                console.error(`DiceBear avatar failed to load for ${guest.name}, trying fallback:`, e);
+                // Try fallback avatar
+                if (fallbackUrl) {
+                  setAvatarUrl(fallbackUrl);
+                } else {
+                  setAvatarError(true);
+                }
+              }}
+            />
+          ) : (
+            <div className={`w-full h-full ${guest.avatarColor} flex items-center justify-center`}>
+              <span className="text-3xl font-black text-white/90">{guest.name[0]}</span>
+            </div>
+          )}
           {isThinking && (
             <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-slate-950/80 border border-slate-700 rounded-full px-2 py-1">
               {[...Array(3)].map((_, i) => (

@@ -46,61 +46,40 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
       </div>
 
       {/* Content */}
-      <div className="relative z-10 text-center max-w-2xl">
-        {/* Animated icon cluster above title */}
-        <div className="flex items-center justify-center gap-4 mb-6 animate-fade-in">
-          <Zap className="w-6 h-6 text-amber-400 animate-zap" />
-          <Radio className="w-8 h-8 text-indigo-400 animate-radio-pulse" />
-          <Zap className="w-6 h-6 text-amber-400 animate-zap" style={{ animationDelay: '0.5s' }} />
+      <div className="relative z-10 text-center max-w-6xl w-full px-4">
+        {/* Animated icon cluster above hero */}
+        <div className="flex items-center justify-center gap-6 mb-10 animate-fade-in">
+          <Zap className="w-5 h-5 text-amber-400 animate-zap" />
+          <Radio className="w-7 h-7 text-indigo-400 animate-radio-pulse" />
+          <Zap className="w-5 h-5 text-amber-400 animate-zap" style={{ animationDelay: '0.5s' }} />
         </div>
 
-        {/* Logo / Title */}
-        <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter text-white uppercase italic mb-4 animate-fade-in">
-          {t('splash.title').split(' ')[0]}{' '}
-          <span className="text-indigo-500 animate-title-glow">{t('splash.title').split(' ').slice(1).join(' ')}</span>
-        </h1>
-        
-        <p className="text-slate-400 text-[11px] sm:text-sm uppercase tracking-[0.3em] mb-6 sm:mb-8 animate-fade-in-delay-1 flex items-center justify-center gap-2">
-          <Sparkles className="w-4 h-4 text-indigo-400 animate-sparkle" />
+        {/* Hero Logo - Large Centerpiece */}
+        <div className="mb-6 animate-fade-in flex justify-center relative">
+          <div className="absolute inset-0 bg-indigo-500/20 blur-[100px] rounded-full" />
+          <img 
+            src="/big_hero_logo.png" 
+            alt="Silicon Smackdown" 
+            className="relative w-72 sm:w-96 md:w-[28rem] lg:w-[32rem] h-auto object-contain drop-shadow-[0_0_80px_rgba(139,92,246,0.6)] hover:drop-shadow-[0_0_100px_rgba(139,92,246,0.8)] transition-all duration-500"
+          />
+        </div>
+
+        {/* Subtitle */}
+        <p className="text-slate-300 text-[11px] sm:text-xs md:text-sm uppercase tracking-[0.35em] mb-6 animate-fade-in-delay-1 flex items-center justify-center gap-2 font-medium">
+          <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-sparkle" />
           {t('splash.subtitle')}
-          <Sparkles className="w-4 h-4 text-indigo-400 animate-sparkle" style={{ animationDelay: '0.3s' }} />
+          <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-sparkle" style={{ animationDelay: '0.3s' }} />
         </p>
 
         {/* Tagline */}
-        <p className="text-lg sm:text-xl md:text-2xl text-slate-300 mb-8 sm:mb-12 leading-relaxed animate-fade-in-delay-2">
+        <p className="text-lg sm:text-xl md:text-2xl text-slate-200 mb-8 leading-relaxed animate-fade-in-delay-2 max-w-3xl mx-auto font-light">
           {t('splash.tagline')}
           <br />
-          <span className="text-indigo-400">{t('splash.taglineHighlight')}</span>
+          <span className="text-indigo-400 font-normal">{t('splash.taglineHighlight')}</span>
         </p>
 
-        {/* Features */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-10 sm:mb-12 animate-fade-in-delay-3">
-          <div className="group bg-slate-900/60 border border-slate-800 rounded-2xl p-6 hover:border-indigo-500/50 hover:bg-slate-900/80 transition-all duration-300">
-            <div className="relative w-14 h-14 mx-auto mb-4 flex items-center justify-center">
-              <div className="absolute inset-0 bg-indigo-500/20 rounded-full animate-ping-slow" />
-              <Mic className="w-8 h-8 text-indigo-400 relative z-10 group-hover:scale-110 transition-transform animate-mic-bounce" />
-            </div>
-            <h3 className="text-white font-semibold mb-2">{t('splash.features.liveVoiceAI.title')}</h3>
-            <p className="text-slate-400 text-sm">{t('splash.features.liveVoiceAI.description')}</p>
-          </div>
-          <div className="group bg-slate-900/60 border border-slate-800 rounded-2xl p-6 hover:border-rose-500/50 hover:bg-slate-900/80 transition-all duration-300">
-            <div className="relative w-14 h-14 mx-auto mb-4 flex items-center justify-center">
-              <Swords className="w-8 h-8 text-rose-400 relative z-10 group-hover:scale-110 transition-transform animate-swords-clash" />
-            </div>
-            <h3 className="text-white font-semibold mb-2">{t('splash.features.epicRivalries.title')}</h3>
-            <p className="text-slate-400 text-sm">{t('splash.features.epicRivalries.description')}</p>
-          </div>
-          <div className="group bg-slate-900/60 border border-slate-800 rounded-2xl p-6 hover:border-emerald-500/50 hover:bg-slate-900/80 transition-all duration-300">
-            <div className="relative w-14 h-14 mx-auto mb-4 flex items-center justify-center">
-              <Target className="w-8 h-8 text-emerald-400 relative z-10 group-hover:scale-110 transition-transform animate-target-lock" />
-            </div>
-            <h3 className="text-white font-semibold mb-2">{t('splash.features.youModerate.title')}</h3>
-            <p className="text-slate-400 text-sm">{t('splash.features.youModerate.description')}</p>
-          </div>
-        </div>
-
         {/* Enter button */}
-        <div className="flex flex-col items-center gap-4">
+        <div className="flex flex-col items-center gap-5 animate-fade-in-delay-4 mb-8">
           {requiresPassword && !isUnlocked && (
             <div className="w-full max-w-sm">
               <input
@@ -114,32 +93,107 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
                   }
                 }}
                 placeholder="Password"
-                className="w-full rounded-full bg-slate-900/80 border border-slate-700 px-5 py-3 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+                className="w-full rounded-full bg-slate-900/60 backdrop-blur-sm border border-slate-700/50 px-6 py-3.5 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 focus:bg-slate-900/80 transition-all"
               />
               {error && (
-                <p className="mt-2 text-xs text-rose-400">{error}</p>
+                <p className="mt-2 text-xs text-rose-400 text-center">{error}</p>
               )}
             </div>
           )}
           <button
             onClick={handleEnter}
-            className="group relative px-10 sm:px-12 py-3.5 sm:py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold uppercase tracking-widest text-[11px] sm:text-sm rounded-full transition-all shadow-2xl shadow-indigo-500/30 hover:shadow-indigo-500/50 active:scale-95 animate-fade-in-delay-4 overflow-hidden"
+            className="group relative px-12 sm:px-16 py-4 sm:py-5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold uppercase tracking-[0.2em] text-xs sm:text-sm rounded-full transition-all shadow-[0_0_40px_rgba(99,102,241,0.4)] hover:shadow-[0_0_60px_rgba(99,102,241,0.6)] active:scale-95 overflow-hidden"
           >
-          <span className="relative z-10 flex items-center gap-2">
+          <span className="relative z-10 flex items-center gap-3">
             <Zap className="w-4 h-4 animate-zap" />
             {t('splash.enterButton')}
             <Zap className="w-4 h-4 animate-zap" style={{ animationDelay: '0.3s' }} />
           </span>
-          <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-500 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity animate-gradient-shift" />
-          <div className="absolute inset-0 rounded-full bg-indigo-400/20 blur-xl group-hover:blur-2xl transition-all" />
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-indigo-500 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-gradient-shift" />
           </button>
         </div>
 
-        <p className="text-slate-600 text-[11px] sm:text-xs mt-6 animate-fade-in-delay-4 flex items-center justify-center gap-2">
-          <Mic className="w-3 h-3" />
+        <p className="text-slate-500 text-[10px] sm:text-xs mb-10 animate-fade-in-delay-4 flex items-center justify-center gap-2 font-medium">
+          <Mic className="w-3 h-3 opacity-60" />
           {t('splash.requirements')}
         </p>
-      </div>
+
+        {/* Features - Animated Ticker */}
+        <div className="relative w-full mb-10 animate-fade-in-delay-3 overflow-hidden">
+          <div className="flex animate-ticker">
+            {/* First set of features */}
+            <div className="flex items-center gap-6 flex-shrink-0 pr-6">
+              <div className="group flex items-center gap-3 bg-slate-900/40 backdrop-blur-sm border border-slate-700/50 rounded-full px-5 py-3 hover:border-indigo-500/60 hover:bg-slate-900/60 transition-all duration-300 cursor-default whitespace-nowrap">
+                <div className="relative w-9 h-9 flex items-center justify-center flex-shrink-0">
+                  <div className="absolute inset-0 bg-indigo-500/20 rounded-full" />
+                  <Mic className="w-5 h-5 text-indigo-400 relative z-10" />
+                </div>
+                <div className="text-left">
+                  <span className="text-white font-semibold text-sm">{t('splash.features.liveVoiceAI.title')}</span>
+                  <span className="text-slate-400 text-xs ml-2">{t('splash.features.liveVoiceAI.description')}</span>
+                </div>
+              </div>
+              <div className="group flex items-center gap-3 bg-slate-900/40 backdrop-blur-sm border border-slate-700/50 rounded-full px-5 py-3 hover:border-rose-500/60 hover:bg-slate-900/60 transition-all duration-300 cursor-default whitespace-nowrap">
+                <div className="relative w-9 h-9 flex items-center justify-center flex-shrink-0">
+                  <div className="absolute inset-0 bg-rose-500/20 rounded-full" />
+                  <Swords className="w-5 h-5 text-rose-400 relative z-10" />
+                </div>
+                <div className="text-left">
+                  <span className="text-white font-semibold text-sm">{t('splash.features.epicRivalries.title')}</span>
+                  <span className="text-slate-400 text-xs ml-2">{t('splash.features.epicRivalries.description')}</span>
+                </div>
+              </div>
+              <div className="group flex items-center gap-3 bg-slate-900/40 backdrop-blur-sm border border-slate-700/50 rounded-full px-5 py-3 hover:border-emerald-500/60 hover:bg-slate-900/60 transition-all duration-300 cursor-default whitespace-nowrap">
+                <div className="relative w-9 h-9 flex items-center justify-center flex-shrink-0">
+                  <div className="absolute inset-0 bg-emerald-500/20 rounded-full" />
+                  <Target className="w-5 h-5 text-emerald-400 relative z-10" />
+                </div>
+                <div className="text-left">
+                  <span className="text-white font-semibold text-sm">{t('splash.features.youModerate.title')}</span>
+                  <span className="text-slate-400 text-xs ml-2">{t('splash.features.youModerate.description')}</span>
+                </div>
+              </div>
+            </div>
+            {/* Duplicate set for seamless loop */}
+            <div className="flex items-center gap-6 flex-shrink-0 pr-6">
+              <div className="group flex items-center gap-3 bg-slate-900/40 backdrop-blur-sm border border-slate-700/50 rounded-full px-5 py-3 hover:border-indigo-500/60 hover:bg-slate-900/60 transition-all duration-300 cursor-default whitespace-nowrap">
+                <div className="relative w-9 h-9 flex items-center justify-center flex-shrink-0">
+                  <div className="absolute inset-0 bg-indigo-500/20 rounded-full" />
+                  <Mic className="w-5 h-5 text-indigo-400 relative z-10" />
+                </div>
+                <div className="text-left">
+                  <span className="text-white font-semibold text-sm">{t('splash.features.liveVoiceAI.title')}</span>
+                  <span className="text-slate-400 text-xs ml-2">{t('splash.features.liveVoiceAI.description')}</span>
+                </div>
+              </div>
+              <div className="group flex items-center gap-3 bg-slate-900/40 backdrop-blur-sm border border-slate-700/50 rounded-full px-5 py-3 hover:border-rose-500/60 hover:bg-slate-900/60 transition-all duration-300 cursor-default whitespace-nowrap">
+                <div className="relative w-9 h-9 flex items-center justify-center flex-shrink-0">
+                  <div className="absolute inset-0 bg-rose-500/20 rounded-full" />
+                  <Swords className="w-5 h-5 text-rose-400 relative z-10" />
+                </div>
+                <div className="text-left">
+                  <span className="text-white font-semibold text-sm">{t('splash.features.epicRivalries.title')}</span>
+                  <span className="text-slate-400 text-xs ml-2">{t('splash.features.epicRivalries.description')}</span>
+                </div>
+              </div>
+              <div className="group flex items-center gap-3 bg-slate-900/40 backdrop-blur-sm border border-slate-700/50 rounded-full px-5 py-3 hover:border-emerald-500/60 hover:bg-slate-900/60 transition-all duration-300 cursor-default whitespace-nowrap">
+                <div className="relative w-9 h-9 flex items-center justify-center flex-shrink-0">
+                  <div className="absolute inset-0 bg-emerald-500/20 rounded-full" />
+                  <Target className="w-5 h-5 text-emerald-400 relative z-10" />
+                </div>
+                <div className="text-left">
+                  <span className="text-white font-semibold text-sm">{t('splash.features.youModerate.title')}</span>
+                  <span className="text-slate-400 text-xs ml-2">{t('splash.features.youModerate.description')}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* Gradient fade edges */}
+          <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-slate-950 to-transparent pointer-events-none" />
+          <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-slate-950 to-transparent pointer-events-none" />
+        </div>
+
+              </div>
 
       {/* Animated particles */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
