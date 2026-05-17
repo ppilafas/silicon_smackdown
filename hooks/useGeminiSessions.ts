@@ -10,13 +10,26 @@ interface SessionCallbacks {
 }
 
 interface UseGeminiSessionsOptions {
-  apiKey: string;
   language: string;
   callbacks: SessionCallbacks;
 }
 
+// Fetch a short-lived ephemeral token from our server. The real API key never
+// reaches the browser; this token is single-use and locked to the Live model.
+async function fetchEphemeralToken(): Promise<string> {
+  const res = await fetch('/api/token', { method: 'POST' });
+  if (!res.ok) {
+    throw new Error(`Token request failed (${res.status})`);
+  }
+  const data = await res.json();
+  if (!data?.token) {
+    throw new Error('Token response missing token');
+  }
+  return data.token as string;
+}
+
 export function useGeminiSessions(options: UseGeminiSessionsOptions) {
-  const { apiKey, language, callbacks } = options;
+  const { language, callbacks } = options;
   
   const [sessions, setSessions] = useState<Record<string, LiveSessionState>>({});
   
@@ -45,8 +58,33 @@ export function useGeminiSessions(options: UseGeminiSessionsOptions) {
       },
     }));
 
-    const guestAi = new GoogleGenAI({ apiKey });
-    
+    let ephemeralToken: string;
+    try {
+      ephemeralToken = await fetchEphemeralToken();
+    } catch (err) {
+      console.warn(`[Sessions] Could not get token for ${guest.name}:`, err);
+      setSessions(prev => ({
+        ...prev,
+        [guest.id]: {
+          ...prev[guest.id],
+          isActive: false,
+          isConnecting: false,
+          error: 'Connection Error',
+        },
+      }));
+      callbacksRef.current.onSessionError(guest.id, 'Connection Error');
+      if (isShowRunningRef.current) {
+        setTimeout(() => connectGuest(guest), 3000);
+      }
+      return;
+    }
+
+    // Ephemeral tokens are only valid on the v1alpha API surface.
+    const guestAi = new GoogleGenAI({
+      apiKey: ephemeralToken,
+      httpOptions: { apiVersion: 'v1alpha' },
+    });
+
     const globalInstructionSuffix = `\n\nGLOBAL STYLE RULES:\n- Lean into roasting, playful rival energy, and sharp humor whenever possible.\n- Prefer concise, punchy lines over long explanations.\n- If you land a punchline or roast that should get a laugh, end the sentence with the tag [LAUGH].`;
     
     const greekLanguageSuffix = language === 'el'
@@ -151,7 +189,7 @@ export function useGeminiSessions(options: UseGeminiSessionsOptions) {
         setTimeout(() => connectGuest(guest), 3000);
       }
     }
-  }, [apiKey, language]);
+  }, [language]);
 
   // Connect multiple guests
   const connectGuests = useCallback(async (guests: GuestProfile[]) => {

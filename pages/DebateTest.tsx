@@ -20,8 +20,6 @@ export const DebateTest: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentPlayingTurn, setCurrentPlayingTurn] = useState<number | null>(null);
 
-  const apiKey = import.meta.env.VITE_API_KEY;
-
   // Load from localStorage on mount
   useEffect(() => {
     try {
@@ -75,11 +73,6 @@ export const DebateTest: React.FC = () => {
       return;
     }
 
-    if (!apiKey) {
-      setError('API key not configured');
-      return;
-    }
-
     setIsGenerating(true);
     setError(null);
     setGeneratedDebate(null);
@@ -87,7 +80,7 @@ export const DebateTest: React.FC = () => {
 
     try {
       console.log('[DebateTest] Starting generation...');
-      const debate = await generateDebateScript(rivalry, apiKey, numTurns, 'en');
+      const debate = await generateDebateScript(rivalry, numTurns, 'en');
       setGeneratedDebate(debate);
       console.log('[DebateTest] Generation complete!', debate);
     } catch (err: any) {
@@ -105,7 +98,7 @@ export const DebateTest: React.FC = () => {
     }
 
     const rivalry = RIVALRIES.find(r => r.id === selectedRivalryId);
-    if (!rivalry || !apiKey) return;
+    if (!rivalry) return;
 
     setIsGeneratingAudio(true);
     setError(null);
@@ -119,7 +112,6 @@ export const DebateTest: React.FC = () => {
       const audio = await generateDebateAudio(
         generatedDebate,
         rivalry.guests,
-        apiKey,
         laughAudio,
         (current, total) => {
           setAudioProgress({ current, total });

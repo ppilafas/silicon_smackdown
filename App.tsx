@@ -207,7 +207,6 @@ const App: React.FC = () => {
 
   // Gemini sessions hook
   const geminiSessions = useGeminiSessions({
-    apiKey: import.meta.env.VITE_API_KEY,
     language: i18n.language,
     callbacks: {
       onMessage: handleSessionMessage,
