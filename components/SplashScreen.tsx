@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Mic, Swords, Target, Sparkles, Zap, Radio } from 'lucide-react';
+import { Footer } from './Footer';
 
 interface SplashScreenProps {
   onEnter: () => void;
@@ -65,11 +66,19 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         </div>
 
         {/* Subtitle */}
-        <p className="text-slate-300 text-[11px] sm:text-xs md:text-sm uppercase tracking-[0.35em] mb-6 animate-fade-in-delay-1 flex items-center justify-center gap-2 font-medium">
+        <p className="text-slate-300 text-[11px] sm:text-xs md:text-sm uppercase tracking-[0.35em] mb-3 animate-fade-in-delay-1 flex items-center justify-center gap-2 font-medium">
           <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-sparkle" />
           {t('splash.subtitle')}
           <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-sparkle" style={{ animationDelay: '0.3s' }} />
         </p>
+
+        {/* Beta Notice */}
+        <div className="mb-6 animate-fade-in-delay-1">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/30 rounded-full">
+            <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
+            <span className="text-amber-400 text-xs font-medium">Experimental Beta - Expect bugs & improvements</span>
+          </div>
+        </div>
 
         {/* Tagline */}
         <p className="text-lg sm:text-xl md:text-2xl text-slate-200 mb-8 leading-relaxed animate-fade-in-delay-2 max-w-3xl mx-auto font-light">
@@ -220,6 +229,9 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
           <Zap className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3 h-3 text-amber-400/40" />
         </div>
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };

@@ -10,32 +10,52 @@ import { GuestSelector } from './components/GuestSelector';
 import { GuestCard } from './components/GuestCard';
 import { LiveApiIndicator } from './components/LiveApiIndicator';
 import { SplashScreen } from './components/SplashScreen';
+import { Footer } from './components/Footer';
 import {
   useConversationState,
   useTranscription,
   useAudioPipeline,
   useGeminiSessions,
 } from './hooks';
+import { getAppState, saveAppState, setAppUnlocked, getLiveSession, saveLiveSession, clearLiveSession } from './utils/persistence';
 
 type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
 const App: React.FC = () => {
   const { t, i18n } = useTranslation();
   
+  // Load persisted state
+  const persistedState = getAppState();
+  
   // UI State
-  const [showSplash, setShowSplash] = useState(true);
-  const [isPasswordUnlocked, setIsPasswordUnlocked] = useState(() =>
-    localStorage.getItem('smackdown_password_unlocked') === 'true'
-  );
+  const [showSplash, setShowSplash] = useState(() => {
+    // Skip splash if user has already selected a rivalry
+    return !persistedState.selectedRivalryId;
+  });
+  const [isPasswordUnlocked, setIsPasswordUnlocked] = useState(() => persistedState.hasUnlockedApp);
   const expectedPassword = import.meta.env.VITE_LANDING_PASSWORD as string | undefined;
   const [isLive, setIsLive] = useState(false);
-  const [selectedRivalryId, setSelectedRivalryId] = useState<string | null>(null);
-  const [selectedGuests, setSelectedGuests] = useState<GuestProfile[]>([]);
-  const [isFeedPaused, setIsFeedPaused] = useState(false);
-  const [showStarted, setShowStarted] = useState(false);
+  const [selectedRivalryId, setSelectedRivalryId] = useState<string | null>(() => persistedState.selectedRivalryId);
+  const [selectedGuests, setSelectedGuests] = useState<GuestProfile[]>(() => {
+    // Restore selected guests from persisted rivalry
+    if (persistedState.selectedRivalryId) {
+      const rivalry = RIVALRIES.find(r => r.id === persistedState.selectedRivalryId);
+      return rivalry?.guests || [];
+    }
+    return [];
+  });
+  const [isFeedPaused, setIsFeedPaused] = useState(() => {
+    const session = getLiveSession();
+    return session?.isFeedPaused ?? false;
+  });
+  const [showStarted, setShowStarted] = useState(() => {
+    const session = getLiveSession();
+    return session?.showStarted ?? false;
+  });
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [apiStatus, setApiStatus] = useState<ConnectionStatus>('disconnected');
   const [hostInput, setHostInput] = useState('');
+  const [sessionRestored, setSessionRestored] = useState(false);
 
   // Refs for synchronous access in callbacks
   const isMicMutedRef = useRef(false);
@@ -215,6 +235,41 @@ const App: React.FC = () => {
     isMicMutedRef.current = isMicMuted;
   }, [isMicMuted]);
 
+  // Restore live session on mount
+  useEffect(() => {
+    const session = getLiveSession();
+    if (session && session.isLive && selectedGuests.length > 0) {
+      console.log('[App] Restoring live session from localStorage');
+      
+      // Restore transcriptions
+      if (session.transcriptions && session.transcriptions.length > 0) {
+        session.transcriptions.forEach(entry => {
+          transcription.addTranscription(entry.speaker, entry.text, entry.type, false);
+        });
+      }
+      
+      // Mark session as restored
+      setSessionRestored(true);
+      
+      // Note: We don't auto-reconnect Gemini sessions on refresh
+      // User needs to manually restart the show to reconnect
+      console.log('[App] Session restored. Click "Start Discussion" to reconnect.');
+    }
+  }, []); // Run once on mount
+
+  // Persist live session state changes
+  useEffect(() => {
+    if (isLive) {
+      saveLiveSession({
+        isLive: true,
+        showStarted,
+        isFeedPaused,
+        conversationState: conversation.state,
+        transcriptions: transcription.transcriptions,
+      });
+    }
+  }, [isLive, showStarted, isFeedPaused, conversation.state, transcription.transcriptions]);
+
   // Language change handler for live sessions
   useEffect(() => {
     const currentLanguage = i18n.language;
@@ -231,13 +286,15 @@ const App: React.FC = () => {
   }, [i18n.language, isLive, selectedGuests, geminiSessions]);
 
   // Handlers
-  const handleLanguageChange = (language: string) => {
-    i18n.changeLanguage(language);
-    localStorage.setItem('language', language);
+  const handleLanguageChange = (lang: string) => {
+    i18n.changeLanguage(lang);
+    lastLanguageRef.current = lang;
+    saveAppState({ lastLanguage: lang });
   };
 
   const handleUnlock = () => {
     setIsPasswordUnlocked(true);
+    setAppUnlocked(true);
     localStorage.setItem('smackdown_password_unlocked', 'true');
   };
 
@@ -245,6 +302,8 @@ const App: React.FC = () => {
     if (isLive) return;
     setSelectedRivalryId(rivalry.id);
     setSelectedGuests(rivalry.guests);
+    setShowSplash(false);
+    saveAppState({ selectedRivalryId: rivalry.id });
     conversation.actions.reset(rivalry.guests[0].id);
   };
 
@@ -299,7 +358,22 @@ const App: React.FC = () => {
     setIsFeedPaused(true); // Start paused
     isFeedPausedRef.current = true;
     setShowStarted(false); // Reset show started flag
-    transcription.clearTranscriptions();
+    setSessionRestored(false); // Clear restored flag
+    
+    // Clear transcriptions only if not recovering from refresh
+    const existingSession = getLiveSession();
+    if (!existingSession?.isLive) {
+      transcription.clearTranscriptions();
+    }
+    
+    // Save initial live session state
+    saveLiveSession({
+      isLive: true,
+      showStarted: false,
+      isFeedPaused: true,
+      conversationState: conversation.state,
+      transcriptions: transcription.transcriptions,
+    });
 
     // Initialize audio pipeline
     await audio.initialize();
@@ -350,6 +424,9 @@ const App: React.FC = () => {
 
     geminiSessions.disconnectAll();
     audio.cleanup();
+    
+    // Clear live session from persistence
+    clearLiveSession();
   };
 
   return (
@@ -373,26 +450,51 @@ const App: React.FC = () => {
                 className="h-8 md:h-10 w-auto object-contain"
               />
               <div className="flex flex-col">
-                <h1 className="text-xl md:text-2xl font-bold tracking-tighter text-white uppercase italic">
-                  Silicon Smackdown
-                </h1>
-                <p className="text-slate-400 text-[10px] uppercase tracking-[0.3em] mono">{t('header.version')}</p>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-heading-primary uppercase italic">
+                    Silicon Smackdown
+                  </h1>
+                  <span className="px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded">
+                    Beta
+                  </span>
+                </div>
+                <p className="text-mono-small">{t('header.version')}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+              {selectedRivalryId && !isLive && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSplash(true);
+                    setSelectedRivalryId(null);
+                    setSelectedGuests([]);
+                    saveAppState({ selectedRivalryId: null });
+                  }}
+                  className="px-4 py-2 rounded-full border-2 border-slate-700 hover:border-indigo-500 bg-slate-900/40 hover:bg-indigo-500/10 transition-all text-button-secondary text-slate-400 hover:text-indigo-300 flex items-center gap-2"
+                  title="Change Rivalry"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  <span className="hidden md:inline">Change Rivalry</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => handleLanguageChange('en')}
-                className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border transition ${i18n.language === 'en' ? 'border-indigo-500 text-indigo-200' : 'border-slate-700 text-slate-400 hover:text-white hover:border-slate-500'}`}
+                className={`w-10 h-10 rounded-full border-2 transition-all flex items-center justify-center text-3xl hover:scale-110 ${i18n.language === 'en' ? 'border-indigo-500 bg-indigo-500/10 shadow-[0_0_15px_rgba(99,102,241,0.3)]' : 'border-slate-700 hover:border-slate-500 bg-slate-900/40'}`}
+                title="English"
               >
-                EN
+                🇬🇧
               </button>
               <button
                 type="button"
                 onClick={() => handleLanguageChange('el')}
-                className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border transition ${i18n.language === 'el' ? 'border-indigo-500 text-indigo-200' : 'border-slate-700 text-slate-400 hover:text-white hover:border-slate-500'}`}
+                className={`w-10 h-10 rounded-full border-2 transition-all flex items-center justify-center text-3xl hover:scale-110 ${i18n.language === 'el' ? 'border-indigo-500 bg-indigo-500/10 shadow-[0_0_15px_rgba(99,102,241,0.3)]' : 'border-slate-700 hover:border-slate-500 bg-slate-900/40'}`}
+                title="Ελληνικά"
               >
-                EL
+                🇬🇷
               </button>
             </div>
             {selectedRivalryId && (
@@ -400,7 +502,7 @@ const App: React.FC = () => {
                 <LiveApiIndicator status={apiStatus} sessions={geminiSessions.sessions} totalGuests={selectedGuests.length} />
                 <button
                   onClick={isLive ? stopShow : startShow}
-                  className={`px-8 py-2.5 rounded-full font-bold uppercase text-xs tracking-widest transition-all shadow-2xl active:scale-95 ${
+                  className={`px-8 py-2.5 rounded-full text-button-primary transition-all shadow-2xl active:scale-95 ${
                     isLive
                       ? 'bg-red-600/10 text-red-500 border border-red-500/50 hover:bg-red-600 hover:text-white'
                       : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-indigo-500/20'
@@ -412,6 +514,35 @@ const App: React.FC = () => {
             )}
           </div>
         </header>
+
+        {/* Session Restored Notification */}
+        {sessionRestored && !isLive && selectedRivalryId && (
+          <div className="w-full max-w-6xl mx-auto mb-6 animate-fade-in">
+            <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40 rounded-2xl p-4 backdrop-blur-sm shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-button-primary text-amber-300 mb-1">Session Recovered!</h3>
+                  <p className="text-body-small text-amber-200/80">
+                    Your previous discussion was restored. Click <strong>"Start Discussion"</strong> to reconnect and continue.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSessionRestored(false)}
+                  className="flex-shrink-0 text-amber-400 hover:text-amber-300 transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Guest Selector - Only visible when not live */}
         {!isLive && (
@@ -468,18 +599,18 @@ const App: React.FC = () => {
                     <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-black px-3 py-1 rounded shadow-lg text-white uppercase tracking-tighter ${
                       isMicMuted ? 'bg-red-600' : 'bg-indigo-600'
                     }`}>
-                      {isMicMuted ? 'Muted' : 'Moderator'}
+                      {isMicMuted ? 'MUTED' : 'MODERATOR'}
                     </div>
                   )}
                 </div>
                 {isLive && (
-                  <p className="text-[10px] text-slate-500 text-center mt-2">
+                  <p className="text-body-tiny text-center mt-2">
                     {isMicMuted ? 'AI guests will talk freely' : 'Click mic to mute'}
                   </p>
                 )}
 
                 <div className="text-center">
-                  <h3 className="text-xs uppercase tracking-[0.3em] text-slate-500 mb-2 font-medium">{t('footer.liveFeed')}</h3>
+                  <h3 className="text-label-primary mb-2">{t('footer.liveFeed')}</h3>
                   <div className="w-32 h-1 bg-slate-800 rounded-full overflow-hidden">
                     <div className={`h-full bg-indigo-500 rounded-full transition-all duration-1000 ${isLive ? 'w-2/3 animate-pulse' : 'w-1/4'}`} />
                   </div>
@@ -511,7 +642,7 @@ const App: React.FC = () => {
                         console.log(`[App] Show paused`);
                       }
                     }}
-                    className={`mt-4 px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest border transition flex items-center justify-center mx-auto gap-2 ${
+                    className={`mt-4 px-6 py-3 rounded-full text-button-primary border transition flex items-center justify-center mx-auto gap-2 ${
                       isFeedPaused 
                         ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.3)]' 
                         : 'border-slate-700 text-slate-200 hover:border-indigo-400 hover:text-indigo-200'
@@ -549,15 +680,15 @@ const App: React.FC = () => {
                       <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     </div>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Global Discussion Log</span>
+                    <span className="text-label-secondary">Global Discussion Log</span>
                   </div>
                   {isLive && (
-                    <span className="text-[10px] text-emerald-400 mono animate-pulse uppercase">Syncing Live Conversation...</span>
+                    <span className="text-label-accent text-emerald-400 animate-pulse">Syncing Live Conversation...</span>
                   )}
                 </div>
                 <div className="px-6 py-4 border-b border-white/5 bg-slate-900/60">
                   <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500">{t('footer.hostInput.title')}</span>
+                    <span className="text-label-secondary">{t('footer.hostInput.title')}</span>
                     <div className="flex-1" />
                   </div>
                   <div className="mt-3 flex items-center gap-3">
@@ -572,13 +703,13 @@ const App: React.FC = () => {
                         }
                       }}
                       placeholder={t('footer.hostInput.placeholder')}
-                      className="flex-1 rounded-full bg-slate-950/60 border border-slate-700 px-4 py-2 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500"
+                      className="flex-1 rounded-full bg-slate-950/60 border border-slate-700 px-4 py-2 text-body-small text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500"
                       disabled={!isLive}
                     />
                     <button
                       onClick={sendHostMessage}
                       disabled={!isLive || !hostInput.trim()}
-                      className="px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest bg-indigo-600 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-indigo-500"
+                      className="px-4 py-2 rounded-full text-button-secondary bg-indigo-600 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-indigo-500"
                     >
                       {t('footer.hostInput.send')}
                     </button>
@@ -595,6 +726,9 @@ const App: React.FC = () => {
           <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-blue-600/5 blur-[180px] rounded-full" />
         </div>
         <audio ref={laughAudioRef} src="/laughter-short.mp3" preload="auto" />
+
+        {/* Footer */}
+        <Footer />
       </div>
     </>
   );

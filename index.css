@@ -1,5 +1,183 @@
 /* Tailwind CDN handles base styling */
 
+/* ============================================
+   TYPOGRAPHY SYSTEM
+   ============================================ */
+
+/* Display Text - Hero titles and main headers */
+.text-display-hero {
+  @apply text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter text-white uppercase italic;
+}
+
+.text-display-large {
+  @apply text-3xl md:text-4xl font-black tracking-tight text-white uppercase;
+}
+
+.text-display-medium {
+  @apply text-2xl md:text-3xl font-bold tracking-tight text-white;
+}
+
+/* Headings - Section and component titles */
+.text-heading-primary {
+  @apply text-xl md:text-2xl font-bold tracking-tighter text-white;
+}
+
+.text-heading-secondary {
+  @apply text-lg md:text-xl font-bold text-white;
+}
+
+.text-heading-tertiary {
+  @apply text-base md:text-lg font-semibold text-slate-200;
+}
+
+/* Guest Names and Roles */
+.text-guest-name {
+  @apply text-xl font-bold text-white group-hover:text-indigo-400 transition-colors;
+}
+
+.text-guest-role {
+  @apply text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400;
+}
+
+.text-guest-personality {
+  @apply text-xs text-slate-400 text-center leading-relaxed italic opacity-80;
+}
+
+/* Labels and Metadata */
+.text-label-primary {
+  @apply text-xs uppercase tracking-[0.3em] text-slate-500 font-medium;
+}
+
+.text-label-secondary {
+  @apply text-[10px] uppercase tracking-[0.3em] text-slate-500 font-bold;
+}
+
+.text-label-accent {
+  @apply text-[10px] font-bold uppercase tracking-widest text-indigo-400;
+}
+
+/* Status and Indicators */
+.text-status-active {
+  @apply text-[8px] font-bold uppercase tracking-tighter text-emerald-400;
+}
+
+.text-status-inactive {
+  @apply text-[8px] font-bold uppercase tracking-tighter text-slate-500;
+}
+
+.text-status-error {
+  @apply text-[8px] font-bold uppercase tracking-tighter text-red-400;
+}
+
+.text-status-warning {
+  @apply text-[8px] font-bold uppercase tracking-tighter text-amber-400;
+}
+
+/* Body Text - Content and descriptions */
+.text-body-large {
+  @apply text-base text-slate-200 leading-relaxed;
+}
+
+.text-body-medium {
+  @apply text-sm text-slate-300 leading-relaxed;
+}
+
+.text-body-small {
+  @apply text-xs text-slate-400 leading-relaxed;
+}
+
+.text-body-tiny {
+  @apply text-[10px] text-slate-500 leading-normal;
+}
+
+/* Transcription Text */
+.text-transcript-speaker {
+  @apply text-xs font-semibold uppercase tracking-wide;
+}
+
+.text-transcript-speaker-user {
+  @apply text-transcript-speaker text-indigo-400;
+}
+
+.text-transcript-speaker-ai {
+  @apply text-transcript-speaker text-emerald-400;
+}
+
+.text-transcript-content {
+  @apply text-sm text-slate-200 leading-relaxed;
+}
+
+.text-transcript-content-user {
+  @apply text-transcript-content text-indigo-100;
+}
+
+.text-transcript-content-ai {
+  @apply text-transcript-content text-slate-200;
+}
+
+/* Buttons and Interactive Elements */
+.text-button-primary {
+  @apply text-xs font-bold uppercase tracking-widest;
+}
+
+.text-button-secondary {
+  @apply text-[10px] font-bold uppercase tracking-wider;
+}
+
+.text-button-large {
+  @apply text-sm font-bold uppercase tracking-widest;
+}
+
+/* Badges and Tags */
+.text-badge {
+  @apply text-[8px] font-bold uppercase tracking-wider;
+}
+
+.text-tag {
+  @apply text-[10px] font-bold uppercase tracking-widest;
+}
+
+/* Monospace - Technical text */
+.text-mono-small {
+  @apply text-[10px] font-mono text-slate-400 uppercase tracking-[0.3em];
+}
+
+.text-mono-tiny {
+  @apply text-[8px] font-mono text-slate-500 uppercase tracking-widest;
+}
+
+/* Special Effects */
+.text-glow-indigo {
+  text-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+}
+
+.text-glow-emerald {
+  text-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+}
+
+.text-glow-red {
+  text-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+}
+
+/* Utility Classes */
+.text-ellipsis-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.text-ellipsis-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ============================================
+   END TYPOGRAPHY SYSTEM
+   ============================================ */
+
 /* Splash screen animations */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(20px); }
@@ -60,6 +238,12 @@
 @keyframes orbit-reverse {
   from { transform: rotate(360deg); }
   to { transform: rotate(0deg); }
+}
+
+@keyframes thinking-wobble {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(-3deg) scale(1.02); }
+  75% { transform: rotate(3deg) scale(1.02); }
 }
 
 @keyframes gradient-shift {
@@ -148,4 +332,8 @@
 .animate-gradient-shift {
   background-size: 200% 200%;
   animation: gradient-shift 3s ease infinite;
+}
+
+.animate-thinking-wobble {
+  animation: thinking-wobble 1.2s ease-in-out infinite;
 }

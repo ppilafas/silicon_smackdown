@@ -4,6 +4,19 @@ import { GuestProfile, LiveSessionState } from '../types';
 import { Visualizer } from './Visualizer';
 import { getAvatarUrl, getFallbackAvatarUrl } from '../utils/avatars';
 
+const THINKING_MESSAGES = [
+  "COOKING...",
+  "LOADING ROAST...",
+  "BRAIN BUFFERING...",
+  "CHARGING COMEBACK...",
+  "CONSULTING THE VOID...",
+  "SHARPENING WIT...",
+  "HEATING UP...",
+  "CALCULATING BURN...",
+  "PREPARING FIRE...",
+  "LOADING SASS..."
+];
+
 interface GuestCardProps {
   guest: GuestProfile;
   state?: LiveSessionState;
@@ -16,12 +29,23 @@ export const GuestCard: React.FC<GuestCardProps> = ({ guest, state, analyserNode
   const [avatarUrl, setAvatarUrl] = useState<string>('');
   const [fallbackUrl, setFallbackUrl] = useState<string>('');
   const [avatarError, setAvatarError] = useState<boolean>(false);
+  const [thinkingMessage, setThinkingMessage] = useState<string>(THINKING_MESSAGES[0]);
   
   const isSpeaking = state?.isSpeaking || false;
   const isConnecting = state?.isConnecting || false;
   const isActive = state?.isActive || false;
   const error = state?.error;
   const isThinking = isAwaitingAudio && !isSpeaking && !isConnecting && !error;
+
+  // Rotate thinking messages for entertainment
+  useEffect(() => {
+    if (isThinking) {
+      const interval = setInterval(() => {
+        setThinkingMessage(THINKING_MESSAGES[Math.floor(Math.random() * THINKING_MESSAGES.length)]);
+      }, 1500);
+      return () => clearInterval(interval);
+    }
+  }, [isThinking]);
 
   // Load avatar URL when component mounts
   useEffect(() => {
@@ -57,7 +81,7 @@ export const GuestCard: React.FC<GuestCardProps> = ({ guest, state, analyserNode
       <div className="relative flex flex-col items-center">
         <div className={`relative mb-8 w-28 h-28 rounded-full overflow-hidden border-4 transition-all duration-500 ${
           isSpeaking ? 'border-emerald-400 scale-105 ring-8 ring-emerald-500/10' : 'border-slate-800'
-        } ${error ? 'border-red-500 animate-pulse' : ''}`}>
+        } ${error ? 'border-red-500 animate-pulse' : ''} ${isThinking ? 'animate-thinking-wobble border-amber-400/60' : ''}`}>
           {!avatarError ? (
             <img 
               src={avatarUrl} 
@@ -80,15 +104,13 @@ export const GuestCard: React.FC<GuestCardProps> = ({ guest, state, analyserNode
             </div>
           )}
           {isThinking && (
-            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-slate-950/80 border border-slate-700 rounded-full px-2 py-1">
-              {[...Array(3)].map((_, i) => (
-                <span
-                  key={i}
-                  className="w-1.5 h-1.5 rounded-full bg-amber-400/80 animate-pulse"
-                  style={{ animationDelay: `${i * 150}ms` }}
-                />
-              ))}
-              <span className="text-[8px] uppercase tracking-widest text-amber-300 ml-1">{t('guestCard.thinking')}</span>
+            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40 rounded-full px-3 py-1.5 shadow-lg backdrop-blur-sm animate-pulse">
+              <div className="flex items-center gap-0.5">
+                <span className="text-xs animate-bounce" style={{ animationDelay: '0ms', animationDuration: '0.6s' }}>🤔</span>
+                <span className="text-xs animate-bounce" style={{ animationDelay: '100ms', animationDuration: '0.6s' }}>💭</span>
+                <span className="text-xs animate-bounce" style={{ animationDelay: '200ms', animationDuration: '0.6s' }}>💡</span>
+              </div>
+              <span className="text-status-warning ml-1 font-black">{thinkingMessage}</span>
             </div>
           )}
           {isSpeaking && (
@@ -108,19 +130,19 @@ export const GuestCard: React.FC<GuestCardProps> = ({ guest, state, analyserNode
           )}
         </div>
         
-        <h3 className="text-xl font-bold text-white mb-1 group-hover:text-indigo-400 transition-colors">{guest.name}</h3>
-        <p className="text-indigo-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">{guest.role}</p>
+        <h3 className="text-guest-name mb-1">{guest.name}</h3>
+        <p className="text-guest-role mb-4">{guest.role}</p>
         
         <div className="h-px w-12 bg-white/10 mb-4" />
         
-        <p className="text-slate-400 text-xs text-center leading-relaxed italic mb-8 opacity-80 h-12 overflow-hidden">
+        <p className="text-guest-personality mb-8 h-12 overflow-hidden">
           "{guest.personality}"
         </p>
         
         <div className={`w-full flex items-center justify-between p-3 rounded-2xl border ${error ? 'bg-red-500/10 border-red-500/20' : 'bg-black/20 border-white/5'}`}>
            <Visualizer isActive={isSpeaking} color={error ? "#ef4444" : isSpeaking ? "#10b981" : "#475569"} analyserNode={analyserNode} />
            <div className="flex flex-col items-end">
-              <span className={`text-[8px] font-bold uppercase tracking-tighter ${error ? 'text-red-400' : isSpeaking ? 'text-emerald-400' : 'text-slate-500'}`}>
+              <span className={error ? 'text-status-error' : isSpeaking ? 'text-status-active' : 'text-status-inactive'}>
                 {error ? 'Err: Offline' : isSpeaking ? 'Broadcasting' : isConnecting ? 'Initializing' : isActive ? 'Standby' : 'Offline'}
               </span>
               <div className="flex gap-0.5 mt-0.5">

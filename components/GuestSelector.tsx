@@ -26,13 +26,13 @@ export const GuestSelector: React.FC<GuestSelectorProps> = ({ onSelect, selected
           >
             <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
             
-            <h3 className={`text-lg font-bold mb-2 transition-colors ${
+            <h3 className={`text-heading-secondary mb-2 transition-colors ${
               isSelected ? 'text-white' : 'text-slate-200 group-hover:text-white'
             }`}>
               {t(`rivalries.${rivalry.id}.name`, { defaultValue: rivalry.name })}
             </h3>
             
-            <p className="text-xs text-slate-400 mb-6 leading-relaxed min-h-[40px]">
+            <p className="text-body-small mb-6 min-h-[40px]">
               {t(`rivalries.${rivalry.id}.description`, { defaultValue: rivalry.description })}
             </p>
             
@@ -49,7 +49,7 @@ export const GuestSelector: React.FC<GuestSelectorProps> = ({ onSelect, selected
                 ))}
               </div>
               
-              <div className={`text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full transition-colors ${
+              <div className={`text-button-secondary px-3 py-1 rounded-full transition-colors ${
                 isSelected 
                   ? 'bg-indigo-500 text-white' 
                   : 'bg-slate-800 text-slate-500 group-hover:bg-slate-700 group-hover:text-slate-300'

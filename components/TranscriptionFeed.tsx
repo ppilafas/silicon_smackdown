@@ -22,7 +22,7 @@ export const TranscriptionFeed: React.FC<TranscriptionFeedProps> = ({ entries })
       style={{ maxHeight: '300px' }}
     >
       {entries.length === 0 ? (
-        <div className="text-center text-slate-500 italic mt-8">
+        <div className="text-center text-body-small italic mt-8">
           The microphones are hot. Start the show to begin the discussion.
         </div>
       ) : (
@@ -31,16 +31,16 @@ export const TranscriptionFeed: React.FC<TranscriptionFeedProps> = ({ entries })
             key={entry.id} 
             className={`flex flex-col ${entry.type === 'user' ? 'items-end' : 'items-start'}`}
           >
-            <div className={`text-xs mb-1 font-semibold flex items-center gap-2 ${entry.type === 'user' ? 'text-indigo-400' : 'text-emerald-400'}`}>
+            <div className={entry.type === 'user' ? 'text-transcript-speaker-user mb-1 flex items-center gap-2' : 'text-transcript-speaker-ai mb-1 flex items-center gap-2'}>
               {entry.speaker.toUpperCase()}
               {entry.isStreaming && (
                 <span className="inline-flex items-center">
                   <span className="animate-pulse text-xs">●</span>
-                  <span className="text-xs text-slate-500 ml-1">speaking...</span>
+                  <span className="text-body-tiny ml-1">speaking...</span>
                 </span>
               )}
             </div>
-            <div className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm shadow-lg ${
+            <div className={`max-w-[80%] rounded-2xl px-4 py-2 shadow-lg ${
               entry.type === 'user' 
                 ? 'bg-indigo-600/20 text-indigo-100 border border-indigo-500/30' 
                 : 'bg-slate-800 text-slate-200 border border-slate-700'
