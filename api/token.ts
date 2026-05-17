@@ -4,14 +4,18 @@
  * The real GEMINI_API_KEY lives only in this server environment and is never
  * sent to the browser. The client connects to the Live API directly using the
  * returned token, so we keep the low-latency direct WebSocket while keeping the
- * key secret. The token is locked to the Live model and expires quickly, so a
- * leaked token is near-worthless.
+ * key secret.
+ *
+ * NOTE: we intentionally do NOT set `liveConnectConstraints`. Setting it (even
+ * with only a model) locks the ENTIRE LiveConnectConfig to what's in the
+ * constraint, so the browser's per-guest responseModalities/speechConfig get
+ * ignored and the session is closed with WS 1007 ("Cannot extract voices from
+ * a non-audio request"). Each guest needs a different voice/systemInstruction,
+ * so the config must stay client-supplied. Security is enforced instead by
+ * single-use + short expiry, which makes a leaked token near-worthless.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
-
-// Must match the model used in hooks/useGeminiSessions.ts
-const LIVE_MODEL = 'gemini-2.5-flash-native-audio-preview-12-2025';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -40,8 +44,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         expireTime: new Date(now + 30 * 60 * 1000).toISOString(),
         // The token must be used to start a session within 2 minutes.
         newSessionExpireTime: new Date(now + 2 * 60 * 1000).toISOString(),
-        // Lock the token to the Live model so it can't be repurposed.
-        liveConnectConstraints: { model: LIVE_MODEL },
         httpOptions: { apiVersion: 'v1alpha' },
       },
     });

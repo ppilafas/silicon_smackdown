@@ -151,8 +151,12 @@ export function useGeminiSessions(options: UseGeminiSessionsOptions) {
               setTimeout(() => connectGuest(guest), 2000);
             }
           },
-          onclose: () => {
-            console.warn(`[Sessions] Session closed for ${guest.name}`);
+          onclose: (e: any) => {
+            // Log code/reason — a clean open followed by an immediate close
+            // (e.g. WS 1007) is otherwise invisible and looks like a hang.
+            console.warn(
+              `[Sessions] Session closed for ${guest.name} (code=${e?.code} reason=${e?.reason || 'n/a'})`
+            );
             delete sessionsMapRef.current[guest.id];
 
             setSessions(prev => ({
