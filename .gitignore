@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Eval harness output (generated transcripts)
+scripts/eval-out
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

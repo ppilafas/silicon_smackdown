@@ -1,6 +1,7 @@
 import { useRef, useCallback, useState } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality } from '@google/genai';
 import { GuestProfile, LiveSessionState } from '../types';
+import { buildSystemSuffix } from '../utils/debatePrompt';
 
 interface SessionCallbacks {
   onMessage: (guestId: string, message: LiveServerMessage) => void;
@@ -85,11 +86,7 @@ export function useGeminiSessions(options: UseGeminiSessionsOptions) {
       httpOptions: { apiVersion: 'v1alpha' },
     });
 
-    const globalInstructionSuffix = `\n\nGLOBAL STYLE RULES:\n- When prompted, start speaking immediately — no preamble, filler, or restating the question.\n- Lean into roasting, playful rival energy, and sharp humor whenever possible.\n- Prefer concise, punchy lines over long explanations.\n- If you land a punchline or roast that should get a laugh, end the sentence with the tag [LAUGH].`;
-    
-    const greekLanguageSuffix = language === 'el'
-      ? '\n\nLANGUAGE RULES:\n- Always respond in Greek.\n- Use natural modern Greek.\n- Do not switch to English unless explicitly asked by the host.'
-      : '';
+    const systemSuffix = buildSystemSuffix({ language });
 
     // Create AbortController for timeout
     const abortController = new AbortController();
@@ -105,7 +102,7 @@ export function useGeminiSessions(options: UseGeminiSessionsOptions) {
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: guest.voice } },
           },
-          systemInstruction: `${guest.systemInstruction}${globalInstructionSuffix}${greekLanguageSuffix}`,
+          systemInstruction: `${guest.systemInstruction}${systemSuffix}`,
           outputAudioTranscription: {},
           inputAudioTranscription: {},
           tools: [{ googleSearch: {} }],

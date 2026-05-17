@@ -1,5 +1,6 @@
 import { useReducer, useCallback, useRef } from 'react';
 import { GuestProfile } from '../types';
+import { DEFAULT_TARGET_TURNS } from '../utils/debatePrompt';
 
 // Conversation state types
 export interface ConversationState {
@@ -9,6 +10,11 @@ export interface ConversationState {
   lastHostInstruction: string;
   pendingHostInstruction: string | null;
   awaitingAudio: Record<string, boolean>;
+  // Debate arc (Phase 1): drives phase-aware prompting + anti-repetition.
+  turnIndex: number;
+  targetTurns: number;
+  runningGag: string;
+  pointsMade: string[];
 }
 
 // Action types for the reducer
@@ -22,6 +28,8 @@ export type ConversationAction =
   | { type: 'SET_AWAITING_AUDIO'; guestId: string; awaiting: boolean }
   | { type: 'SWITCH_TO_OTHER_GUEST'; guests: GuestProfile[] }
   | { type: 'SESSION_DISCONNECTED'; guestId: string }
+  | { type: 'CONFIGURE_DEBATE'; targetTurns: number; runningGag: string }
+  | { type: 'ADVANCE_TURN'; point: string }
   | { type: 'RESET'; initialGuestId?: string };
 
 // Initial state factory
@@ -32,6 +40,10 @@ export const createInitialState = (initialGuestId?: string): ConversationState =
   lastHostInstruction: '',
   pendingHostInstruction: null,
   awaitingAudio: {},
+  turnIndex: 0,
+  targetTurns: DEFAULT_TARGET_TURNS,
+  runningGag: '',
+  pointsMade: [],
 });
 
 // Reducer function
@@ -111,6 +123,24 @@ export function conversationReducer(
       };
     }
 
+    case 'CONFIGURE_DEBATE':
+      return {
+        ...state,
+        targetTurns: action.targetTurns,
+        runningGag: action.runningGag,
+        turnIndex: 0,
+        pointsMade: [],
+      };
+
+    case 'ADVANCE_TURN':
+      return {
+        ...state,
+        turnIndex: state.turnIndex + 1,
+        pointsMade: action.point
+          ? [...state.pointsMade, action.point].slice(-12)
+          : state.pointsMade,
+      };
+
     case 'SESSION_DISCONNECTED':
       if (state.activeGuestId === action.guestId) {
         return {
@@ -174,6 +204,14 @@ export function useConversationState(initialGuestId?: string) {
     dispatch({ type: 'SESSION_DISCONNECTED', guestId });
   }, []);
 
+  const configureDebate = useCallback((targetTurns: number, runningGag: string) => {
+    dispatch({ type: 'CONFIGURE_DEBATE', targetTurns, runningGag });
+  }, []);
+
+  const advanceTurn = useCallback((point: string) => {
+    dispatch({ type: 'ADVANCE_TURN', point });
+  }, []);
+
   const reset = useCallback((initialGuestId?: string) => {
     dispatch({ type: 'RESET', initialGuestId });
   }, []);
@@ -190,6 +228,8 @@ export function useConversationState(initialGuestId?: string) {
       setAwaitingAudio,
       switchToOtherGuest,
       sessionDisconnected,
+      configureDebate,
+      advanceTurn,
       reset,
     },
   };

@@ -18,6 +18,16 @@ import {
   useGeminiSessions,
 } from './hooks';
 import { getAppState, saveAppState, setAppUnlocked, getLiveSession, saveLiveSession, clearLiveSession } from './utils/persistence';
+import {
+  DEFAULT_TARGET_TURNS,
+  pickRunningGag,
+  phaseForTurn,
+  buildOpeningPrompt,
+  buildTriggerPrompt,
+  buildPrimeText,
+  summarizePoints,
+  distillPoint,
+} from './utils/debatePrompt';
 
 type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
@@ -147,7 +157,7 @@ const App: React.FC = () => {
           const delta = accumulated.slice(p.primedLen);
           const now = Date.now();
           if (delta.length >= PRIME_MIN_DELTA && now - p.lastPrimeAt >= PRIME_MIN_INTERVAL) {
-            geminiSessions.primeGuest(rival.id, `[${speakerName} is saying]: "${delta}"`);
+            geminiSessions.primeGuest(rival.id, buildPrimeText({ speaker: speakerName, delta }));
             p.primedLen = accumulated.length;
             p.lastPrimeAt = now;
           }
@@ -186,17 +196,32 @@ const App: React.FC = () => {
         if (p.speakerId === guestId && spokenText.length > p.primedLen) {
           const tail = spokenText.slice(p.primedLen).trim();
           if (tail) {
-            geminiSessions.primeGuest(otherGuest.id, `[${speakerName} said]: "${tail}"`);
+            geminiSessions.primeGuest(
+              otherGuest.id,
+              buildPrimeText({ speaker: speakerName, delta: tail, final: true })
+            );
           }
         }
         primeRef.current = { speakerId: null, primedLen: 0, lastPrimeAt: 0 };
 
-        // Minimal trigger: the rival already has the transcript via priming,
-        // so we only carry the (un-primed) host instruction + a GO.
-        const hostContext = convState.lastHostInstruction
-          ? `[Host said]: "${convState.lastHostInstruction}"\n\n`
-          : '';
-        const prompt = `${hostContext}Your turn, ${otherGuest.name} — your rival just finished. Respond now, no preamble. 2-4 punchy sentences.`;
+        // Record the point just made and advance the arc, then build a
+        // phase-aware trigger with an anti-repetition digest. The rival
+        // already has the transcript via priming, so the trigger stays small.
+        const point = distillPoint(spokenText);
+        const nextTurnIndex = convState.turnIndex + 1;
+        const phase = phaseForTurn(nextTurnIndex, convState.targetTurns);
+        const pointsDigest = summarizePoints([...convState.pointsMade, point]);
+        conversation.actions.advanceTurn(point);
+
+        const prompt = buildTriggerPrompt({
+          speaker: otherGuest.name,
+          phase,
+          turnIndex: nextTurnIndex,
+          targetTurns: convState.targetTurns,
+          runningGag: convState.runningGag || 'an escalating absurd shared bit',
+          hostInstruction: convState.lastHostInstruction || undefined,
+          pointsDigest,
+        });
 
         if (turnTimeoutRef.current) clearTimeout(turnTimeoutRef.current);
         console.log(`[App] Prompting ${otherGuest.name} immediately`);
@@ -425,8 +450,10 @@ const App: React.FC = () => {
     // Connect guests
     await geminiSessions.connectGuests(selectedGuests);
 
-    // Reset conversation state
+    // Reset conversation state and seed the debate arc (running gag + length)
     conversation.actions.reset(selectedGuests[0].id);
+    const gagSeed = selectedRivalryId || selectedGuests[0]?.id || 'show';
+    conversation.actions.configureDebate(DEFAULT_TARGET_TURNS, pickRunningGag(gagSeed));
 
     console.log(`[App] Show started - Active Guest: ${selectedGuests[0].name} (Paused, waiting for user to start)`);
 
@@ -665,7 +692,13 @@ const App: React.FC = () => {
                         // Send prompt to first guest to start the roast battle
                         const firstGuest = selectedGuests[0];
                         if (firstGuest) {
-                          const startPrompt = `You're ${firstGuest.name}; your rival ${selectedGuests[1]?.name} is here. Open the show — start talking immediately, no "welcome", just hit them with a punchy roast. 2-3 sentences.`;
+                          const cs = conversation.stateRef.current;
+                          const startPrompt = buildOpeningPrompt({
+                            speaker: firstGuest.name,
+                            rival: selectedGuests[1]?.name ?? 'your rival',
+                            runningGag: cs.runningGag || 'an escalating absurd shared bit',
+                            targetTurns: cs.targetTurns || DEFAULT_TARGET_TURNS,
+                          });
                           geminiSessions.sendToGuest(firstGuest.id, { text: startPrompt });
                           console.log(`[App] Show started! Sent opening prompt to ${firstGuest.name}`);
                         }
