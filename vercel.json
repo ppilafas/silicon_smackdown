@@ -1,9 +1,9 @@
 {
   "redirects": [
     {
-      "source": "/:path*",
+      "source": "/(.*)",
       "has": [{ "type": "host", "value": "ssd.per4ex.org" }],
-      "destination": "https://ssd.supercore.tech/:path*",
+      "destination": "https://ssd.supercore.tech/$1",
       "permanent": true
     }
   ]
