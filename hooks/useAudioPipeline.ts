@@ -6,6 +6,9 @@ interface AudioPipelineOptions {
   onAudioData?: (data: { data: string; mimeType: string }) => void;
 }
 
+// Natural silence inserted between two different speakers' turns (seconds).
+const SPEAKER_HANDOFF_GAP = 0.12;
+
 export function useAudioPipeline(options: AudioPipelineOptions = {}) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [analyserNodes, setAnalyserNodes] = useState<Record<string, AnalyserNode | null>>({});
@@ -159,7 +162,28 @@ export function useAudioPipeline(options: AudioPipelineOptions = {}) {
         AUDIO_CONFIG.channels
       );
 
-      const nextStart = Math.max(nextStartTimeRef.current[guestId] || 0, ctx.currentTime);
+      // This guest's own queued tail (if mid-turn, keep it gapless).
+      const ownNext = nextStartTimeRef.current[guestId] || 0;
+      const isFreshTurn = ownNext <= ctx.currentTime;
+
+      // Latest time any OTHER guest still has audio scheduled to play.
+      let othersBusyUntil = 0;
+      for (const gid of Object.keys(nextStartTimeRef.current)) {
+        if (gid !== guestId) {
+          othersBusyUntil = Math.max(othersBusyUntil, nextStartTimeRef.current[gid] || 0);
+        }
+      }
+
+      // A fresh turn waits for the previous speaker's buffered tail to finish
+      // (+ a natural gap) so speakers never overlap and this guest's
+      // generation latency is absorbed by that tail. Continuing chunks of the
+      // same turn stay gapless on this guest's own timeline.
+      const floor =
+        isFreshTurn && othersBusyUntil > ctx.currentTime
+          ? othersBusyUntil + SPEAKER_HANDOFF_GAP
+          : ctx.currentTime;
+
+      const nextStart = Math.max(ownNext, floor);
       const source = ctx.createBufferSource();
       source.buffer = audioBuffer;
 

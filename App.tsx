@@ -156,7 +156,7 @@ const App: React.FC = () => {
         const guestContext = spokenText.trim() 
           ? `[${speakerName} said]: "${spokenText.trim()}"\n\n` 
           : '';
-        const prompt = `${hostContext}${guestContext}Now it's your turn, ${otherGuest.name}. Respond naturally. Keep it under 25 seconds.`;
+        const prompt = `${hostContext}${guestContext}Your turn, ${otherGuest.name} — start talking immediately, no preamble. 2-4 punchy sentences.`;
 
         if (turnTimeoutRef.current) clearTimeout(turnTimeoutRef.current);
         console.log(`[App] Prompting ${otherGuest.name} immediately`);
@@ -625,7 +625,7 @@ const App: React.FC = () => {
                         // Send prompt to first guest to start the roast battle
                         const firstGuest = selectedGuests[0];
                         if (firstGuest) {
-                          const startPrompt = `Welcome to Silicon Smackdown! You're ${firstGuest.name}, and your rival ${selectedGuests[1]?.name} is here. Start the show with a bold opening statement or roast. Make it punchy and entertaining! Keep it under 20 seconds.`;
+                          const startPrompt = `You're ${firstGuest.name}; your rival ${selectedGuests[1]?.name} is here. Open the show — start talking immediately, no "welcome", just hit them with a punchy roast. 2-3 sentences.`;
                           geminiSessions.sendToGuest(firstGuest.id, { text: startPrompt });
                           console.log(`[App] Show started! Sent opening prompt to ${firstGuest.name}`);
                         }
