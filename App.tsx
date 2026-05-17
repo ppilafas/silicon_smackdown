@@ -65,6 +65,16 @@ const App: React.FC = () => {
   const lastLaughterAtRef = useRef(0);
   const turnTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Tracks how much of the speaking guest's transcript has already been
+  // streamed into the rival's session as warm context (see primeRival).
+  const primeRef = useRef<{ speakerId: string | null; primedLen: number; lastPrimeAt: number }>({
+    speakerId: null,
+    primedLen: 0,
+    lastPrimeAt: 0,
+  });
+  const PRIME_MIN_DELTA = 80;   // chars of new transcript before priming
+  const PRIME_MIN_INTERVAL = 1500; // ms between primes (bounds # of messages)
+
   // Custom hooks
   const conversation = useConversationState(selectedGuests[0]?.id);
   const transcription = useTranscription();
@@ -121,6 +131,27 @@ const App: React.FC = () => {
         if (shouldLaugh) {
           triggerAudienceLaughter();
         }
+
+        // Warm the rival's context with what this guest is saying, while
+        // they're still saying it (turnComplete:false → rival stays silent).
+        // By the turn boundary the rival has already ingested most of this,
+        // so its trigger generates with much lower latency.
+        const rival = selectedGuests.find(g => g.id !== guestId);
+        if (rival) {
+          const p = primeRef.current;
+          if (p.speakerId !== guestId) {
+            p.speakerId = guestId;
+            p.primedLen = 0;
+            p.lastPrimeAt = 0;
+          }
+          const delta = accumulated.slice(p.primedLen);
+          const now = Date.now();
+          if (delta.length >= PRIME_MIN_DELTA && now - p.lastPrimeAt >= PRIME_MIN_INTERVAL) {
+            geminiSessions.primeGuest(rival.id, `[${speakerName} is saying]: "${delta}"`);
+            p.primedLen = accumulated.length;
+            p.lastPrimeAt = now;
+          }
+        }
       }
     }
 
@@ -149,20 +180,29 @@ const App: React.FC = () => {
       if (otherGuest) {
         conversation.actions.setActiveGuest(otherGuest.id);
 
-        // Build prompt for next guest
-        const hostContext = convState.lastHostInstruction 
-          ? `[Host said]: "${convState.lastHostInstruction}"\n\n` 
+        // Flush any transcript not yet primed into the rival, then reset so
+        // the next speaker's priming starts fresh.
+        const p = primeRef.current;
+        if (p.speakerId === guestId && spokenText.length > p.primedLen) {
+          const tail = spokenText.slice(p.primedLen).trim();
+          if (tail) {
+            geminiSessions.primeGuest(otherGuest.id, `[${speakerName} said]: "${tail}"`);
+          }
+        }
+        primeRef.current = { speakerId: null, primedLen: 0, lastPrimeAt: 0 };
+
+        // Minimal trigger: the rival already has the transcript via priming,
+        // so we only carry the (un-primed) host instruction + a GO.
+        const hostContext = convState.lastHostInstruction
+          ? `[Host said]: "${convState.lastHostInstruction}"\n\n`
           : '';
-        const guestContext = spokenText.trim() 
-          ? `[${speakerName} said]: "${spokenText.trim()}"\n\n` 
-          : '';
-        const prompt = `${hostContext}${guestContext}Your turn, ${otherGuest.name} — start talking immediately, no preamble. 2-4 punchy sentences.`;
+        const prompt = `${hostContext}Your turn, ${otherGuest.name} — your rival just finished. Respond now, no preamble. 2-4 punchy sentences.`;
 
         if (turnTimeoutRef.current) clearTimeout(turnTimeoutRef.current);
         console.log(`[App] Prompting ${otherGuest.name} immediately`);
-        
+
         conversation.actions.setAwaitingAudio(otherGuest.id, true);
-        geminiSessions.sendToGuest(otherGuest.id, { text: prompt });
+        geminiSessions.triggerGuest(otherGuest.id, prompt);
 
         // Clear host instruction after use
         if (convState.lastHostInstruction) {

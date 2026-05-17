@@ -247,6 +247,44 @@ export function useGeminiSessions(options: UseGeminiSessionsOptions) {
     return false;
   }, []);
 
+  // Silently feed context to a guest WITHOUT triggering a response.
+  // turnComplete:false tells the model "more is coming, don't answer yet",
+  // so by the time it's this guest's turn its context (and KV cache) is
+  // already warm and the turn trigger generates with much lower latency.
+  const primeGuest = useCallback((guestId: string, text: string) => {
+    const session = sessionsMapRef.current[guestId];
+    if (!session) return false;
+    try {
+      session.sendClientContent({
+        turns: [{ role: 'user', parts: [{ text }] }],
+        turnComplete: false,
+      });
+      return true;
+    } catch (e) {
+      console.warn(`[Sessions] Failed to prime ${guestId}:`, e);
+      return false;
+    }
+  }, []);
+
+  // Trigger a response on the SAME ordered channel as primeGuest. Using
+  // sendClientContent(turnComplete:true) here (not sendRealtimeInput)
+  // guarantees the model sees all primed context before this trigger —
+  // a realtime-input trigger can otherwise jump ahead of queued context.
+  const triggerGuest = useCallback((guestId: string, text: string) => {
+    const session = sessionsMapRef.current[guestId];
+    if (!session) return false;
+    try {
+      session.sendClientContent({
+        turns: [{ role: 'user', parts: [{ text }] }],
+        turnComplete: true,
+      });
+      return true;
+    } catch (e) {
+      console.warn(`[Sessions] Failed to trigger ${guestId}:`, e);
+      return false;
+    }
+  }, []);
+
   // Update session speaking state
   const updateSessionSpeaking = useCallback((guestId: string, isSpeaking: boolean) => {
     setSessions(prev => ({
@@ -289,6 +327,8 @@ export function useGeminiSessions(options: UseGeminiSessionsOptions) {
     disconnectAll,
     getSession,
     sendToGuest,
+    primeGuest,
+    triggerGuest,
     updateSessionSpeaking,
     updateSessionTranscription,
     clearSessionTranscriptions,
