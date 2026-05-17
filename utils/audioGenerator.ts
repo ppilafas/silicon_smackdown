@@ -3,7 +3,6 @@
  * Converts debate scripts to audio using Gemini TTS with laugh injection
  */
 
-import { GoogleGenAI } from '@google/genai';
 import { DebateTurn, GeneratedDebate } from './debateGenerator';
 import { GuestProfile } from '../types';
 
@@ -26,11 +25,8 @@ export interface GeneratedAudio {
 export async function generateTurnAudio(
   turn: DebateTurn,
   guest: GuestProfile,
-  apiKey: string,
   laughAudioBase64?: string
 ): Promise<GeneratedAudio> {
-  const ai = new GoogleGenAI({ apiKey });
-
   console.log(`\n[AudioGenerator] 🎙️ Generating audio for Turn ${turn.turnNumber} (${turn.speaker})`);
 
   // Split text at [LAUGH] tags
@@ -56,8 +52,7 @@ export async function generateTurnAudio(
       // Generate TTS for speech segment
       const speechAudio = await generateSpeechSegment(
         segment.text,
-        guest,
-        ai
+        guest
       );
       audioSegments.push({
         type: 'speech',
@@ -86,7 +81,6 @@ export async function generateTurnAudio(
 export async function generateDebateAudio(
   debate: GeneratedDebate,
   guests: GuestProfile[],
-  apiKey: string,
   laughAudioBase64?: string,
   onProgress?: (current: number, total: number) => void
 ): Promise<GeneratedAudio[]> {
@@ -108,7 +102,7 @@ export async function generateDebateAudio(
 
     onProgress?.(i + 1, debate.turns.length);
 
-    const audio = await generateTurnAudio(turn, guest, apiKey, laughAudioBase64);
+    const audio = await generateTurnAudio(turn, guest, laughAudioBase64);
     audioTurns.push(audio);
   }
 
@@ -126,30 +120,23 @@ export async function generateDebateAudio(
  */
 async function generateSpeechSegment(
   text: string,
-  guest: GuestProfile,
-  ai: GoogleGenAI
+  guest: GuestProfile
 ): Promise<string> {
   // Build style prompt based on guest personality
   const stylePrompt = buildStylePrompt(guest, text);
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-preview-tts',
-      contents: [{ parts: [{ text: stylePrompt }] }],
-      config: {
-        responseModalities: ['AUDIO'],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: {
-              voiceName: guest.voice,
-            },
-          },
-        },
-      },
+    const response = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: stylePrompt, voiceName: guest.voice }),
     });
 
-    // Extract base64 audio from response
-    const audioData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+    if (!response.ok) {
+      throw new Error(`TTS request failed (${response.status})`);
+    }
+
+    const { audioData } = (await response.json()) as { audioData?: string };
     return audioData || '';
   } catch (error) {
     console.error('[AudioGenerator] TTS generation failed:', error);

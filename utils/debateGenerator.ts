@@ -3,7 +3,6 @@
  * Generates full debate scripts using text-only LLM calls
  */
 
-import { GoogleGenAI } from '@google/genai';
 import { GuestProfile, RivalryPair } from '../types';
 
 export interface DebateTurn {
@@ -26,12 +25,9 @@ export interface GeneratedDebate {
  */
 export async function generateDebateScript(
   rivalry: RivalryPair,
-  apiKey: string,
   numTurns: number = 10,
   language: string = 'en'
 ): Promise<GeneratedDebate> {
-  const ai = new GoogleGenAI({ apiKey });
-
   // Build the orchestrator prompt
   const orchestratorPrompt = buildOrchestratorPrompt(rivalry, numTurns, language);
 
@@ -43,35 +39,20 @@ export async function generateDebateScript(
   console.log('========================================\n');
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: orchestratorPrompt,
-      config: {
-        temperature: 0.9, // High creativity for comedy
-        maxOutputTokens: 4096,
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: 'object',
-          properties: {
-            turns: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  speaker: { type: 'string' },
-                  text: { type: 'string' },
-                  turnNumber: { type: 'number' }
-                },
-                required: ['speaker', 'text', 'turnNumber']
-              }
-            }
-          },
-          required: ['turns']
-        }
-      },
+    const apiResponse = await fetch('/api/debate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: orchestratorPrompt }),
     });
 
-    const text = response.text;
+    if (!apiResponse.ok) {
+      throw new Error(`Debate generation request failed (${apiResponse.status})`);
+    }
+
+    const { text, totalTokens } = (await apiResponse.json()) as {
+      text: string;
+      totalTokens?: number;
+    };
     
     console.log('\n========================================');
     console.log('[DebateGenerator] ✅ Generation complete');
@@ -135,7 +116,7 @@ export async function generateDebateScript(
       rivalryName: rivalry.name,
       turns,
       generatedAt: Date.now(),
-      totalTokens: response.usageMetadata?.totalTokenCount,
+      totalTokens,
     };
 
     console.log('[DebateGenerator] Successfully generated', turns.length, 'turns');
