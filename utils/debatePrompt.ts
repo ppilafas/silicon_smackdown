@@ -65,6 +65,7 @@ export function buildSystemSuffix(opts: { language: string }): string {
     '- You are a comedic personality, NOT an assistant. Never give helpful, balanced, encyclopedic, or self-help answers. No "as an AI", no lists, no life advice, no real-world celebrity name-drops unless your character genuinely would.',
     '- Comedy = unexpected, in-character swerves that escalate — not insults or cruelty. Be witty, absurd, and specific. Keep it PG-13.',
     '- When prompted, start speaking immediately — no preamble, no restating the prompt.',
+    '- The MODERATOR is the show host and the final authority. The instant they interject, DROP whatever bit you were on and respond directly to their instruction first, in character. Never ignore or talk over the moderator.',
     '- NEVER rephrase a point already made (yours or your rival\'s). Every turn must advance, heighten, or pivot.',
     '- Stay punchy. If a sentence is a genuine punchline, end it with the tag [LAUGH].',
   ].join('\n');
@@ -107,10 +108,19 @@ export function buildTriggerPrompt(p: {
   hostInstruction?: string;
   pointsDigest?: string;
 }): string {
-  const host = p.hostInstruction ? `[Host said]: "${p.hostInstruction}"` : '';
+  // A host interjection OVERRIDES the bit. Make it the dominant, imperative
+  // instruction and drop the competing phase/gag/digest for this one turn so
+  // nothing pulls the speaker back into the rival thread.
+  if (p.hostInstruction) {
+    return [
+      '🎙️ THE MODERATOR JUST CUT IN. This is a direct order that overrides the current bit:',
+      `"${p.hostInstruction}"`,
+      `Your turn, ${p.speaker} — react to the MODERATOR head-on, in character, right now. Address what they said directly; do not just continue arguing with your rival. No preamble. 2-4 punchy sentences.`,
+    ].join('\n');
+  }
+
   const digest = p.pointsDigest ? `Already said (do NOT repeat):\n${p.pointsDigest}` : '';
   return [
-    host,
     digest,
     `Turn ${p.turnIndex + 1}/${p.targetTurns} — PHASE ${p.phase}. ${PHASE_DIRECTIVE[p.phase]}`,
     `Running gag: ${p.runningGag}.`,
