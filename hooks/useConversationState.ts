@@ -102,9 +102,12 @@ export function conversationReducer(
       };
 
     case 'CLEAR_HOST_INSTRUCTION':
+      // Fully consumed — also drop any pending copy so it can't re-inject
+      // on the next turnComplete.
       return {
         ...state,
         lastHostInstruction: '',
+        pendingHostInstruction: null,
       };
 
     case 'SET_AWAITING_AUDIO':

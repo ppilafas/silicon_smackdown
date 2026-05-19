@@ -476,12 +476,49 @@ const App: React.FC = () => {
     conversation.actions.hostSentMessage(message);
     setHostInput('');
 
-    // The instruction is queued in conversation state and injected into the
-    // next turn's trigger on the ordered sendClientContent channel (see the
-    // turnComplete handler). We intentionally do NOT also push it via
-    // sendRealtimeInput here — that raced the ordered turn flow and was the
-    // reason host prompts got dropped.
-  }, [hostInput, isLive, transcription, conversation]);
+    const cs = conversation.stateRef.current;
+
+    // Paused / not started yet: just queue it — the turnComplete handler
+    // injects pendingHostInstruction into the next trigger on resume.
+    if (isFeedPausedRef.current || !showStarted) return;
+
+    // MODERATOR CUT-IN: stop the current speaker mid-turn and immediately
+    // hand the next turn to the rival, leading with the host instruction —
+    // like a real host interjecting. The cut speaker's session keeps
+    // generating but is no longer active, so handleSessionMessage ignores
+    // its audio/turnComplete (no double-trigger).
+    const cutId = cs.activeGuestId;
+    const nextGuest = selectedGuests.find(g => g.id !== cutId) || selectedGuests[0];
+    if (!nextGuest) return;
+
+    if (cutId) {
+      audio.stopGuestAudio(cutId);
+      geminiSessions.updateSessionSpeaking(cutId, false);
+      transcription.finalizeStreamingTranscription(cutId);
+      transcription.clearAccumulatedText(cutId);
+    }
+    primeRef.current = { speakerId: null, primedLen: 0, lastPrimeAt: 0 };
+
+    const nextTurnIndex = cs.turnIndex + 1;
+    const phase = phaseForTurn(nextTurnIndex, cs.targetTurns);
+    const pointsDigest = summarizePoints(cs.pointsMade);
+    conversation.actions.advanceTurn(''); // advance arc, don't log host words as a "point"
+    conversation.actions.setActiveGuest(nextGuest.id);
+    conversation.actions.setAwaitingAudio(nextGuest.id, true);
+    conversation.actions.clearHostInstruction(); // consumed by this cut-in
+
+    const prompt = buildTriggerPrompt({
+      speaker: nextGuest.name,
+      phase,
+      turnIndex: nextTurnIndex,
+      targetTurns: cs.targetTurns,
+      runningGag: cs.runningGag || 'an escalating absurd shared bit',
+      hostInstruction: message,
+      pointsDigest,
+    });
+    console.log(`[App] Host cut-in → ${nextGuest.name}`);
+    geminiSessions.triggerGuest(nextGuest.id, prompt);
+  }, [hostInput, isLive, showStarted, selectedGuests, transcription, conversation, geminiSessions, audio]);
 
   const shouldTriggerLaughter = (text: string) => {
     if (!text.trim()) return false;
