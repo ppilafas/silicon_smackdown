@@ -304,22 +304,26 @@ const App: React.FC = () => {
   // Restore live session on mount
   useEffect(() => {
     const session = getLiveSession();
-    if (session && session.isLive && selectedGuests.length > 0) {
+    const sameRivalry = !!session && session.rivalryId === selectedRivalryId;
+
+    if (session && session.isLive && sameRivalry && selectedGuests.length > 0) {
       console.log('[App] Restoring live session from localStorage');
-      
-      // Restore transcriptions
+
       if (session.transcriptions && session.transcriptions.length > 0) {
         session.transcriptions.forEach(entry => {
           transcription.addTranscription(entry.speaker, entry.text, entry.type, false);
         });
       }
-      
-      // Mark session as restored
+
       setSessionRestored(true);
-      
-      // Note: We don't auto-reconnect Gemini sessions on refresh
-      // User needs to manually restart the show to reconnect
+      // We don't auto-reconnect Gemini sessions on refresh — the user
+      // clicks "Start Discussion" to reconnect.
       console.log('[App] Session restored. Click "Start Discussion" to reconnect.');
+    } else if (session && !sameRivalry) {
+      // Saved session belongs to a different rivalry — discard it so its
+      // transcript can't leak into this one.
+      console.log('[App] Discarding stale session from a different rivalry');
+      clearLiveSession();
     }
   }, []); // Run once on mount
 
@@ -327,6 +331,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (isLive) {
       saveLiveSession({
+        rivalryId: selectedRivalryId,
         isLive: true,
         showStarted,
         isFeedPaused,
@@ -334,7 +339,7 @@ const App: React.FC = () => {
         transcriptions: transcription.transcriptions,
       });
     }
-  }, [isLive, showStarted, isFeedPaused, conversation.state, transcription.transcriptions]);
+  }, [isLive, showStarted, isFeedPaused, conversation.state, transcription.transcriptions, selectedRivalryId]);
 
   // Language change handler for live sessions
   useEffect(() => {
@@ -372,6 +377,14 @@ const App: React.FC = () => {
     setShowSplash(false);
     saveAppState({ selectedRivalryId: rivalry.id });
     void startShow(rivalry);
+  };
+
+  // Discard the recovered session and begin from a clean slate.
+  const startFresh = () => {
+    transcription.clearTranscriptions();
+    clearLiveSession();
+    conversation.actions.reset(selectedGuests[0]?.id);
+    setSessionRestored(false);
   };
 
   const toggleMicMute = () => {
@@ -456,6 +469,7 @@ const App: React.FC = () => {
     if (isStartingRef.current || isLive) return; // ignore rapid re-clicks
     isStartingRef.current = true;
     const gagSeed = (rivalry ? rivalry.id : selectedRivalryId) || guests[0]?.id || 'show';
+    const rivalryId = (rivalry ? rivalry.id : selectedRivalryId) || null;
 
     try {
     setIsLive(true);
@@ -466,14 +480,19 @@ const App: React.FC = () => {
     setShowStarted(false); // Reset show started flag
     setSessionRestored(false); // Clear restored flag
     
-    // Clear transcriptions only if not recovering from refresh
+    // Keep the transcript only when genuinely resuming the SAME rivalry's
+    // recovered session; otherwise start clean (and drop the stale one).
     const existingSession = getLiveSession();
-    if (!existingSession?.isLive) {
+    const resumingSameRivalry =
+      !!existingSession?.isLive && existingSession.rivalryId === rivalryId;
+    if (!resumingSameRivalry) {
       transcription.clearTranscriptions();
+      clearLiveSession();
     }
-    
+
     // Save initial live session state
     saveLiveSession({
+      rivalryId,
       isLive: true,
       showStarted: false,
       isFeedPaused: true,
@@ -641,14 +660,21 @@ const App: React.FC = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <h3 className="text-button-primary text-amber-300 mb-1">Session Recovered!</h3>
                   <p className="text-body-small text-amber-200/80">
-                    Your previous discussion was restored. Click <strong>"Start Discussion"</strong> to reconnect and continue.
+                    Your previous discussion was restored. <strong>"Start Discussion"</strong> resumes it, or start over.
                   </p>
                 </div>
                 <button
+                  onClick={startFresh}
+                  className="flex-shrink-0 px-4 py-2 rounded-full border border-amber-500/50 text-amber-300 hover:bg-amber-500/15 transition-colors text-button-secondary"
+                >
+                  Start fresh
+                </button>
+                <button
                   onClick={() => setSessionRestored(false)}
+                  aria-label="Dismiss"
                   className="flex-shrink-0 text-amber-400 hover:text-amber-300 transition-colors"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

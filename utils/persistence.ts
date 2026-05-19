@@ -7,6 +7,9 @@ import { TranscriptionEntry } from '../types';
 import { ConversationState } from '../hooks/useConversationState';
 
 export interface PersistedLiveSession {
+  // Which rivalry this session belongs to. Used so a saved transcript is
+  // never restored onto a different rivalry.
+  rivalryId: string | null;
   isLive: boolean;
   showStarted: boolean;
   isFeedPaused: boolean;
@@ -119,6 +122,7 @@ export const setAppUnlocked = (unlocked: boolean): void => {
 export const saveLiveSession = (session: Partial<PersistedLiveSession>): void => {
   const currentState = getAppState();
   const existingSession = currentState.liveSession || {
+    rivalryId: null,
     isLive: false,
     showStarted: false,
     isFeedPaused: false,
