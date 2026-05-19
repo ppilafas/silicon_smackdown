@@ -74,6 +74,7 @@ const App: React.FC = () => {
   const laughAudioRef = useRef<HTMLAudioElement | null>(null);
   const lastLaughterAtRef = useRef(0);
   const turnTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isStartingRef = useRef(false); // guards against double-start (rapid card clicks)
 
   // Tracks how much of the speaking guest's transcript has already been
   // streamed into the rival's session as warm context (see primeRival).
@@ -362,13 +363,14 @@ const App: React.FC = () => {
     localStorage.setItem('smackdown_password_unlocked', 'true');
   };
 
-  const handleRivalrySelect = (rivalry: RivalryPair) => {
+  // One click from a rivalry card: select it AND go straight into the show.
+  const handleStartRivalry = (rivalry: RivalryPair) => {
     if (isLive) return;
     setSelectedRivalryId(rivalry.id);
     setSelectedGuests(rivalry.guests);
     setShowSplash(false);
     saveAppState({ selectedRivalryId: rivalry.id });
-    conversation.actions.reset(rivalry.guests[0].id);
+    void startShow(rivalry);
   };
 
   const toggleMicMute = () => {
@@ -415,7 +417,16 @@ const App: React.FC = () => {
   };
 
   // Start the show
-  const startShow = async () => {
+  const startShow = async (rivalry?: RivalryPair) => {
+    // When started straight from a rivalry card, the selection state setters
+    // haven't applied yet, so use the passed rivalry's guests directly.
+    const guests = rivalry ? rivalry.guests : selectedGuests;
+    if (guests.length === 0) return;
+    if (isStartingRef.current || isLive) return; // ignore rapid re-clicks
+    isStartingRef.current = true;
+    const gagSeed = (rivalry ? rivalry.id : selectedRivalryId) || guests[0]?.id || 'show';
+
+    try {
     setIsLive(true);
     setIsMicMuted(true); // Start with mic muted
     isMicMutedRef.current = true;
@@ -443,19 +454,18 @@ const App: React.FC = () => {
     await audio.initialize();
 
     // Initialize audio for each guest
-    selectedGuests.forEach(guest => {
+    guests.forEach(guest => {
       audio.initializeGuestAudio(guest.id);
     });
 
     // Connect guests
-    await geminiSessions.connectGuests(selectedGuests);
+    await geminiSessions.connectGuests(guests);
 
     // Reset conversation state and seed the debate arc (running gag + length)
-    conversation.actions.reset(selectedGuests[0].id);
-    const gagSeed = selectedRivalryId || selectedGuests[0]?.id || 'show';
+    conversation.actions.reset(guests[0].id);
     conversation.actions.configureDebate(DEFAULT_TARGET_TURNS, pickRunningGag(gagSeed));
 
-    console.log(`[App] Show started - Active Guest: ${selectedGuests[0].name} (Paused, waiting for user to start)`);
+    console.log(`[App] Show started - Active Guest: ${guests[0].name} (Paused, waiting for user to start)`);
 
     // Setup mic capture
     await audio.setupMicCapture(
@@ -475,10 +485,14 @@ const App: React.FC = () => {
         return null;
       }
     );
+    } finally {
+      isStartingRef.current = false;
+    }
   };
 
   // Stop the show
   const stopShow = () => {
+    isStartingRef.current = false;
     setIsLive(false);
     setShowStarted(false);
     setIsFeedPaused(false);
@@ -567,7 +581,7 @@ const App: React.FC = () => {
               <div className="flex items-center gap-4">
                 <LiveApiIndicator status={apiStatus} sessions={geminiSessions.sessions} totalGuests={selectedGuests.length} />
                 <button
-                  onClick={isLive ? stopShow : startShow}
+                  onClick={isLive ? stopShow : () => startShow()}
                   className={`px-8 py-2.5 rounded-full text-button-primary transition-all shadow-2xl active:scale-95 ${
                     isLive
                       ? 'bg-red-600/10 text-red-500 border border-red-500/50 hover:bg-red-600 hover:text-white'
@@ -612,10 +626,7 @@ const App: React.FC = () => {
 
         {/* Guest Selector - Only visible when not live */}
         {!isLive && (
-          <GuestSelector
-            selectedId={selectedRivalryId}
-            onSelect={handleRivalrySelect}
-          />
+          <GuestSelector onStart={handleStartRivalry} />
         )}
 
         {isLive && (
