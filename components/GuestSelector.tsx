@@ -33,20 +33,27 @@ export const GuestSelector: React.FC<GuestSelectorProps> = ({ onStart }) => {
             {t(`rivalries.${rivalry.id}.description`, { defaultValue: rivalry.description })}
           </p>
 
-          <div className="flex items-center justify-between mt-auto">
-            <div className="flex -space-x-3">
-              {rivalry.guests.map((guest, i) => (
-                <div
-                  key={guest.id}
-                  className={`w-10 h-10 rounded-full border-2 border-slate-900 flex items-center justify-center text-xs font-bold text-white shadow-lg ${guest.avatarColor} relative z-${10 - i}`}
-                  title={guest.name}
-                >
-                  {guest.name[0]}
-                </div>
-              ))}
+          <div className="flex items-center justify-between gap-3 mt-auto">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex -space-x-3 flex-shrink-0">
+                {rivalry.guests.map((guest, i) => (
+                  <div
+                    key={guest.id}
+                    className={`w-10 h-10 rounded-full border-2 border-slate-900 flex items-center justify-center text-xs font-bold text-white shadow-lg ${guest.avatarColor} relative z-${10 - i}`}
+                    title={guest.name}
+                  >
+                    {guest.name[0]}
+                  </div>
+                ))}
+              </div>
+              <div className="min-w-0 leading-tight">
+                <p className="text-xs font-semibold text-slate-200 truncate">{rivalry.guests[0].name}</p>
+                <p className="text-[10px] uppercase tracking-wider text-slate-500">vs</p>
+                <p className="text-xs font-semibold text-slate-200 truncate">{rivalry.guests[1].name}</p>
+              </div>
             </div>
 
-            <div className="text-button-secondary px-4 py-1.5 rounded-full flex items-center gap-1.5 transition-colors bg-slate-800 text-slate-400 group-hover:bg-indigo-500 group-hover:text-white">
+            <div className="text-button-secondary px-4 py-1.5 rounded-full flex items-center gap-1.5 flex-shrink-0 transition-colors bg-slate-800 text-slate-400 group-hover:bg-indigo-500 group-hover:text-white">
               <Play className="w-3.5 h-3.5" />
               {t('guestSelector.start', { defaultValue: 'Start' })}
             </div>
