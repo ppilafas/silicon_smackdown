@@ -4,279 +4,221 @@
 # Silicon Smackdown: AI Talk Show
 ### 🎭 Real-Time Voice AI Debate Platform Powered by Gemini Live API
 
-[![Live Demo](https://img.shields.io/badge/🔴_Live-Demo-brightgreen)](https://your-demo-url.com)
+[![Live](https://img.shields.io/badge/🔴_Live-ssd.supercore.tech-brightgreen)](https://ssd.supercore.tech)
 [![Google Gemini](https://img.shields.io/badge/Powered_by-Google_Gemini-4285F4)](https://ai.google.dev/gemini-api)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 
 </div>
 
 ## 🌟 Overview
 
-**Silicon Smackdown** is an innovative AI-powered talk show platform where legendary personalities engage in real-time voice debates. As the moderator, you control the conversation flow while AI guests powered by Google's Gemini Live API engage in witty banter, philosophical debates, and epic roast battles.
+**Silicon Smackdown** is an AI talk show where legendary personalities clash in real-time **voice** debates. Two AI guests, powered by Google's Gemini Live API native-audio model, roast and rebut each other live while **you** play the moderator — steering, cutting in, pausing, and stoking the fire.
 
-### � What Makes It Special
+It's a **client-side React app** with a thin serverless layer: the browser streams audio directly to/from the Live API for low latency, while a small set of Vercel functions hold the API key and mint short-lived tokens so the key is **never shipped to the browser**.
 
-- **🎤 Full-Duplex Voice AI**: Real-time, low-latency voice conversations using Gemini 2.5 Flash with native audio
-- **🤖 Dynamic AI Personalities**: 20+ pre-configured character pairs with unique voices, personalities, and debate styles
-- **🎨 Contextual Avatars**: Character-specific DiceBear avatars that match each personality
-- **🎬 Broadcast-Quality UX**: Polished, modern UI with smooth animations and real-time audio visualization
-- **🌍 Multilingual Support**: English and Greek language support with i18next
-- **⚡ Smart Conversation Flow**: Automated turn-taking with intelligent prompting and roast battle mechanics
+### 🔥 What Makes It Special
+
+- **🎤 Full-duplex voice AI** — real-time native-audio conversations on `gemini-2.5-flash-native-audio-preview`, one persistent WebSocket session per guest
+- **🎬 You're the moderator** — interject by mic or text; a **moderator cut-in** can interrupt a guest mid-sentence and redirect the debate
+- **🧠 Debate engine** — a turn arc (`OPEN → ESCALATE → CALLBACK → CLIMAX → CLOSER`), a per-show running gag, and an anti-repetition digest keep debates escalating instead of looping
+- **🤖 20+ rivalries** — curated character pairs with distinct voices, personas, and dynamics
+- **🔒 Key-safe by design** — ephemeral tokens for Live, proxied REST; the Gemini key stays server-side
+- **🌍 Multilingual** — English & Greek (i18next)
 
 ## ✨ Key Features
 
-### 🎙️ **Voice & Audio**
-- **Real-time audio streaming** with Web Audio API and AudioWorklet
-- **Live waveform visualization** for both host and AI guests
-- **Audience laughter effects** triggered by AI humor detection
-- **Microphone mute control** for moderator intervention
-- **Audio quality indicators** showing connection status
+### 🎙️ Voice & Audio
+- Real-time audio streaming via Web Audio API + AudioWorklet (ScriptProcessor fallback)
+- Live waveform visualization for host and guests
+- Gapless cross-speaker audio scheduling (a new speaker starts exactly as the previous one's buffered tail ends)
+- Microphone mute + audience-laughter effects
 
-### 🎭 **AI Conversation System**
-- **Typed state machine** managing conversation flow with useReducer
-- **Automatic turn-taking** between AI guests
-- **Streaming transcription** with real-time updates
-- **Context-aware prompting** maintaining conversation coherence
-- **Roast battle mechanics** with opening statements and rebuttals
+### 🎭 Conversation System
+- Typed `useReducer` state machine for turn-taking and speaking state
+- Phase-aware, context-primed prompting (each guest's session is warmed with the rival's transcript *during* their turn, so the turn-boundary trigger is tiny and fast)
+- Streaming transcription with per-debater bubbles, grouping, and timestamps
+- **Moderator cut-in**: a host prompt interrupts the current speaker and immediately hands the next turn to the rival, leading with your instruction
 
-### 🎨 **User Experience**
-- **Rivalry selection screen** with 10+ curated matchups
-- **Pause/Resume functionality** with seamless conversation continuation
-- **Live transcription feed** showing full conversation history
-- **Host input system** for moderator interjections
-- **Password-protected landing page** for private demos
+### 🎨 User Experience
+- One-click start straight from a rivalry card
+- Polished discussion log: per-debater sides/colors, smart auto-scroll + "jump to latest", live turn/phase status
+- Pause / resume with seamless continuation
+- Session persistence (keyed to the rivalry, so a saved transcript never leaks into a different pairing) + "Start fresh"
+- Fully responsive (dedicated mobile layout) + password-gated landing
 
-### 🏗️ **Architecture**
-- **Custom React hooks** for state management (useConversationState, useTranscription, useAudioPipeline, useGeminiSessions)
-- **Modular component design** with TypeScript for type safety
-- **Efficient audio pipeline** with fallback mechanisms
-- **Session management** with auto-reconnection logic
+### 🏗️ Architecture
+- Custom hooks: `useConversationState`, `useTranscription`, `useAudioPipeline`, `useGeminiSessions`
+- Pure debate-prompt logic centralized in `utils/debatePrompt.ts` (also drives the offline eval harness)
+- Serverless functions in `api/` for token minting and REST proxying
+- Auto-reconnect with close-code diagnostics
 
 ## 🎭 Featured Rivalries
 
-Choose from 10+ curated matchups, each with unique personalities and debate dynamics:
+A sample of the 20+ curated matchups (see [`constants.ts`](constants.ts)):
 
 | Rivalry | Characters | Theme |
 |---------|-----------|-------|
 | **Logic vs. Hype** | Dr. Orion 🤖 vs. Luna Nova 🚀 | Philosophy vs. Futurism |
-| **Detective & Mastermind** | Sherlock 🔍 vs. Moriarty 🎩 | Genius vs. Criminal Mind |
+| **The Detective & The Mastermind** | Sherlock 🔍 vs. Moriarty 🎩 | Genius vs. Criminal Mind |
 | **The Genius & The Spider** | Tony Stark 🦾 vs. Peter Parker 🕷️ | Mentor vs. Protégé |
-| **Jedi Master & Apprentice** | Master Yoda ⚔️ vs. Luke Skywalker 🌟 | Wisdom vs. Youth |
+| **The Master & The Hope** | Master Yoda ⚔️ vs. Luke Skywalker 🌟 | Wisdom vs. Youth |
 | **The Relativist & The Quantum** | Einstein 🧠 vs. Niels Bohr ⚛️ | Physics Debate |
-| **The Teacher & The Student** | Walter White 🧪 vs. Jesse Pinkman 💊 | Breaking Bad Dynamics |
-| **King & Queen** | Jon Snow ❄️ vs. Daenerys Targaryen 🐉 | Power Struggle |
-| **The Mighty Pirate & Ghost** | Guybrush 🏴‍☠️ vs. Captain LeChuck 👻 | Retro Gaming Legends |
+| **King & Queen** | Jon Snow ❄️ vs. Daenerys 🐉 | Power Struggle |
+| **The Mighty Pirate & The Ghost** | Guybrush 🏴‍☠️ vs. LeChuck 👻 | Retro Gaming Legends |
 
-*Each rivalry features custom system instructions, unique voices, and personality-driven conversation styles.*
+*Each rivalry ships custom system instructions, a prebuilt voice, and a personality-driven style.*
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- **Node.js** v18 or higher
-- **Google Gemini API Key** ([Get one here](https://ai.google.dev/gemini-api/docs/api-key))
-- **Modern browser** with microphone access
+- **Node.js** 18+ (tested on 20)
+- **Google Gemini API key** ([get one](https://ai.google.dev/gemini-api/docs/api-key))
+- Modern browser with microphone access
 
-### Installation
+### Install
 
 ```bash
-# Clone the repository
 git clone https://github.com/ppilafas/silicon_smackdown.git
 cd silicon_smackdown
-
-# Install dependencies
 npm install
-
-# Create environment file
-cp .env.example .env.local
 ```
 
-### Configuration
+### Configure
 
-Edit `.env.local` and add your credentials:
+Create a `.env.local` in the project root:
 
 ```env
-# Required: Your Gemini API key
-VITE_API_KEY=your_gemini_api_key_here
+# Server-only. NOT prefixed with VITE_, so it is never bundled into the
+# client. Used by the serverless functions in /api (and by `npm run dev`).
+GEMINI_API_KEY=your_gemini_api_key_here
 
-# Optional: Password protection for landing page
+# Optional: soft password gate for the landing page (client-side; not
+# a security boundary — just keeps casual visitors out of a demo).
 VITE_LANDING_PASSWORD=your_password_here
 ```
 
-### Run Development Server
+> **Why no `VITE_API_KEY`?** Anything `VITE_`-prefixed is inlined into the public JS bundle. The Gemini key stays server-side: the Live API uses short-lived **ephemeral tokens** minted by `api/token`, and the REST calls are proxied through `api/debate` / `api/tts`. The key never reaches the browser.
+
+### Run
 
 ```bash
 npm run dev
 ```
 
-Navigate to `http://localhost:3000` and grant microphone permissions when prompted.
+Open the printed local URL and grant microphone access. A custom Vite dev plugin runs the `api/*` functions locally, so `npm run dev` works end-to-end **without** `vercel dev`. (Browser `console` is also mirrored to the dev terminal in development.)
 
-### Build for Production
+### Build
 
 ```bash
-npm run build
-npm run preview
+npm run build && npm run preview
 ```
+
+### Evaluate debate quality (optional)
+
+```bash
+npm run eval        # scripts/evalDebates.ts — scores transcripts headless
+```
+
+Reports repetition, character-bleed, gag callbacks, laughs, and escalation. Needs a non-free-tier `GEMINI_API_KEY` (free tier rate-limits make runs slow/flaky).
 
 ## 🎮 How to Use
 
-1. **Select a Rivalry** - Choose from 10+ pre-configured character matchups
-2. **Start Discussion** - Click to initialize AI guest connections
-3. **Start Show** - Click the green "START SHOW" button to begin the roast battle
-4. **Moderate** - Use your microphone to interject or click to mute and let AI guests talk freely
-5. **Pause/Resume** - Control the conversation flow with the pause button
-6. **Enjoy** - Watch the AI personalities engage in witty debates and roasts!
+1. **Pick a rivalry** — one click on a card selects the pair *and* starts the show
+2. **Start the show** — press the green Start button to kick off the opening turn
+3. **Moderate** — type a prompt to **cut in** and redirect the debate, or use your mic; mute to let the AIs run free
+4. **Pause / Resume** — control the flow anytime
+5. **Start fresh** — discard a recovered session for a clean slate
 
 ## 🛠️ Tech Stack
 
-### Core Technologies
-- **React 19** - Latest React with concurrent features
-- **TypeScript 5.0** - Type-safe development
-- **Vite** - Lightning-fast build tool
-- **Tailwind CSS** - Utility-first styling
+| Area | Tech |
+|------|------|
+| Core | React 19, TypeScript 5.8, Vite 6 |
+| Styling | Tailwind CSS 3 (PostCSS build — not the CDN) |
+| AI & Audio | `@google/genai` (Gemini Live + REST), Web Audio API, AudioWorklet |
+| i18n | i18next / react-i18next (EN/EL) |
+| UI | Lucide icons, DiceBear avatars |
+| Hosting | Vercel (static app + `api/` serverless functions) |
 
-### AI & Audio
-- **Google GenAI SDK** - Gemini 2.5 Flash Live API integration
-- **Web Audio API** - Real-time audio processing
-- **AudioWorklet** - High-performance audio capture
-- **i18next** - Internationalization (EN/EL)
+## 🔒 Security Model
 
-### State Management
-- **Custom React Hooks** - Modular state management
-  - `useConversationState` - Typed reducer for conversation flow
-  - `useTranscription` - Streaming transcription management
-  - `useAudioPipeline` - Audio capture and playback
-  - `useGeminiSessions` - Multi-session AI management
-
-### UI/UX
-- **DiceBear Avatars** - Contextual character avatars
-- **Lucide Icons** - Modern icon library
-- **Custom Animations** - Smooth transitions and effects
+- **Key never in the client.** `GEMINI_API_KEY` lives only in the server environment.
+- **Live API → ephemeral tokens.** `api/token` mints a single-use, short-expiry token; the browser opens the Live WebSocket directly with that, preserving low latency.
+- **REST → proxied.** `api/debate` and `api/tts` call Gemini server-side with fixed models and input caps.
+- **No `liveConnectConstraints`.** Setting it (even model-only) locks the whole Live config and breaks per-guest voices — security is enforced via single-use + short expiry instead.
+- The landing-page password is a **soft gate only** (client-side), not an auth boundary.
 
 ## 🏗️ Project Structure
 
 ```
-silicon-smackdown/
-├── src/
-│   ├── components/          # React components
-│   │   ├── GuestCard.tsx   # AI guest display
-│   │   ├── SplashScreen.tsx # Landing page
-│   │   ├── Visualizer.tsx  # Audio waveform
-│   │   └── ...
-│   ├── hooks/              # Custom React hooks
-│   │   ├── useConversationState.ts
-│   │   ├── useTranscription.ts
-│   │   ├── useAudioPipeline.ts
-│   │   └── useGeminiSessions.ts
-│   ├── utils/              # Utility functions
-│   │   └── avatars.ts      # Avatar configuration
-│   ├── constants.ts        # Character definitions
-│   ├── types.ts           # TypeScript types
-│   └── App.tsx            # Main application
-├── public/                # Static assets
-└── package.json
+.
+├── api/                     # Vercel serverless functions (key-side)
+│   ├── token.ts             # mint ephemeral Live API token
+│   ├── debate.ts            # proxied debate-script generation
+│   └── tts.ts               # proxied TTS
+├── components/              # GuestCard, GuestChip, GuestSelector,
+│                            # TranscriptionFeed, SplashScreen, …
+├── hooks/                   # useConversationState, useTranscription,
+│                            # useAudioPipeline, useGeminiSessions
+├── pages/                   # DebateTest (pre-gen lab)
+├── scripts/                 # evalDebates.ts (offline quality harness)
+├── utils/                   # debatePrompt.ts, persistence.ts,
+│                            # audio-processing.ts, avatars.ts, devLog.ts
+├── i18n/                    # locale resources
+├── constants.ts             # rivalry & character definitions
+├── types.ts
+├── App.tsx                  # main app
+├── index.tsx · index.html · index.css
+├── vite.config.ts           # incl. dev /api bridge + client-log bridge
+└── tailwind.config.js · postcss.config.js
 ```
 
-## 🎯 Key Implementation Details
+## 🧠 Debate Engine
 
-### Conversation Flow
-- **State Machine**: Typed reducer manages guest turns, speaking states, and prompts
-- **Auto Turn-Taking**: Guests automatically respond to each other
-- **Context Preservation**: Conversation history maintained across turns
-- **Smart Prompting**: Dynamic prompts based on conversation state
+Centralized in [`utils/debatePrompt.ts`](utils/debatePrompt.ts) (pure, so the eval harness exercises the real logic):
 
-### Audio Pipeline
-- **Dual-Channel**: Separate audio streams for each AI guest
-- **Real-time Processing**: AudioWorklet for low-latency capture
-- **Visualization**: Live waveform analysis using AnalyserNode
-- **Fallback System**: ScriptProcessor fallback for older browsers
+- **Arc phases** — `OPEN → ESCALATE → CALLBACK → CLIMAX → CLOSER`, derived from `turn / targetTurns`; each phase injects a distinct directive.
+- **Running gag** — one absurd shared motif seeded per show (deterministic from the rivalry id); both guests are told to plant and call back to it. This is what breaks the "restate-your-stance-forever" loop on evenly-matched pairs.
+- **Anti-repetition digest** — recent points are distilled and fed back as a "do NOT repeat" list.
+- **Context priming** — while a guest speaks, their transcript is streamed into the rival's session with `turnComplete:false`, so the turn-boundary trigger is tiny and fast.
+- **Moderator authority** — a host instruction overrides the bit: it becomes the entire next trigger ("the moderator just cut in — address it head-on").
 
-### Session Management
-- **Multi-Session**: Simultaneous connections to multiple AI guests
-- **Auto-Reconnect**: Automatic reconnection on connection loss
-- **Error Handling**: Graceful degradation with user feedback
+## 🚢 Deployment
 
-## 🎨 Customization
+Hosted on **Vercel** (project `silicon-smackdown`). The GitHub integration **auto-deploys on every push to `main`** — no manual step. Production: **[ssd.supercore.tech](https://ssd.supercore.tech)**.
 
-### Adding New Rivalries
-
-Edit `src/constants.ts` to add new character pairs:
-
-```typescript
-{
-  id: 'your-rivalry-id',
-  name: 'Your Rivalry Name',
-  description: 'Description of the matchup',
-  guests: [
-    {
-      id: 'guest-1',
-      name: 'Character Name',
-      role: 'Character Role',
-      voice: GuestVoice.Puck, // or other voice
-      avatarColor: 'bg-indigo-500',
-      personality: 'Character personality description',
-      systemInstruction: `Your detailed system prompt...`
-    },
-    // Second guest...
-  ]
-}
-```
-
-### Customizing Avatars
-
-Edit `src/utils/avatars.ts` to configure character avatars:
-
-```typescript
-'Character Name': {
-  style: 'personas', // or 'bottts-neutral', 'pixel-art'
-  seed: 'unique-seed-string',
-  gender: 'male' // or 'female'
-}
-```
+`GEMINI_API_KEY` is set as a Vercel project env var (Production + Development). `vercel.json` 308-redirects the deprecated domain to the canonical one.
 
 ## 🐛 Troubleshooting
 
-**Microphone not working?**
-- Grant microphone permissions in browser settings
-- Check that no other app is using the microphone
-- Try refreshing the page
+**`/api/token` 404 locally** — you're on plain `vite` without the dev bridge; pull latest (the Vite plugin in `vite.config.ts` serves `api/*` under `npm run dev`).
 
-**AI guests not responding?**
-- Verify your Gemini API key is correct
-- Check browser console for connection errors
-- Ensure stable internet connection
+**Guests stuck "CONNECTING (0/2)"** — usually a Live-config issue (e.g. WS close `1007`). The dev terminal mirrors the browser console (`[Sessions] Session closed code=…`) — read the close code.
 
-**Audio quality issues?**
-- Use headphones to prevent echo
-- Check microphone input levels
-- Ensure quiet environment for best results
+**Mic not working** — grant permissions, ensure no other app holds the mic, refresh.
 
-## 📊 Performance
-
-- **Initial Load**: ~2s (with code splitting)
-- **AI Response Time**: 1-3s (depends on Gemini API)
-- **Audio Latency**: <100ms (with AudioWorklet)
-- **Memory Usage**: ~50-100MB (active session)
+**AI guests not responding** — verify `GEMINI_API_KEY` is set server-side; check the dev terminal / Vercel function logs.
 
 ## 🤝 Contributing
 
-Contributions welcome! Please feel free to submit a Pull Request.
+PRs welcome. Run `npm run build` (type-checks via `tsc`) before submitting.
 
 ## 📄 License
 
-MIT License - Built for the Google Gemini Developer Competition
+MIT — Built for the Google Gemini Developer Competition.
 
 ## 🙏 Acknowledgments
 
-- **Google Gemini Team** - For the incredible Live API
-- **DiceBear** - For the avatar generation API
-- **React Team** - For React 19 and concurrent features
+- **Google Gemini Team** — the Live API
+- **DiceBear** — avatar generation
+- **React Team** — React 19
 
 ---
 
 <div align="center">
 
-**[Live Demo](https://your-demo-url.com)** • **[Report Bug](https://github.com/ppilafas/silicon_smackdown/issues)** • **[Request Feature](https://github.com/ppilafas/silicon_smackdown/issues)**
+**[Live Demo](https://ssd.supercore.tech)** • **[Report Bug](https://github.com/ppilafas/silicon_smackdown/issues)** • **[Request Feature](https://github.com/ppilafas/silicon_smackdown/issues)**
 
 Made with ❤️ for the AI community
 
