@@ -339,3 +339,22 @@
 .animate-thinking-wobble {
   animation: thinking-wobble 1.2s ease-in-out infinite;
 }
+
+/* ============================================
+   MOBILE / SAFE-AREA HELPERS
+   ============================================ */
+
+/* Respect notch / home-indicator insets (viewport-fit=cover). */
+.safe-top { padding-top: env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+/* Low-end phones & accessibility: kill the heavy decorative motion. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-float,
+  .animate-orbit,
+  .animate-orbit-reverse,
+  .animate-ticker,
+  .animate-gradient-shift {
+    animation: none !important;
+  }
+}

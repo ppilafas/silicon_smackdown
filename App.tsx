@@ -8,6 +8,7 @@ import { Visualizer } from './components/Visualizer';
 import { TranscriptionFeed } from './components/TranscriptionFeed';
 import { GuestSelector } from './components/GuestSelector';
 import { GuestCard } from './components/GuestCard';
+import { GuestChip } from './components/GuestChip';
 import { LiveApiIndicator } from './components/LiveApiIndicator';
 import { SplashScreen } from './components/SplashScreen';
 import { Footer } from './components/Footer';
@@ -380,6 +381,36 @@ const App: React.FC = () => {
     console.log(`[App] Mic ${newMuteState ? 'MUTED' : 'UNMUTED'}`);
   };
 
+  // Shared by the desktop and mobile play/pause controls.
+  const handlePlayPauseToggle = () => {
+    if (isFeedPaused && !showStarted) {
+      // First start: unpause and kick off the opening turn.
+      setIsFeedPaused(false);
+      isFeedPausedRef.current = false;
+      setShowStarted(true);
+      const firstGuest = selectedGuests[0];
+      if (firstGuest) {
+        const cs = conversation.stateRef.current;
+        const startPrompt = buildOpeningPrompt({
+          speaker: firstGuest.name,
+          rival: selectedGuests[1]?.name ?? 'your rival',
+          runningGag: cs.runningGag || 'an escalating absurd shared bit',
+          targetTurns: cs.targetTurns || DEFAULT_TARGET_TURNS,
+        });
+        geminiSessions.sendToGuest(firstGuest.id, { text: startPrompt });
+        console.log(`[App] Show started! Sent opening prompt to ${firstGuest.name}`);
+      }
+    } else if (isFeedPaused && showStarted) {
+      setIsFeedPaused(false);
+      isFeedPausedRef.current = false;
+      console.log('[App] Show resumed - conversation continues');
+    } else {
+      setIsFeedPaused(true);
+      isFeedPausedRef.current = true;
+      console.log('[App] Show paused');
+    }
+  };
+
   const sendHostMessage = useCallback(() => {
     const message = hostInput.trim();
     if (!message || !isLive) return;
@@ -520,28 +551,31 @@ const App: React.FC = () => {
         />
       )}
 
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-between p-4 md:p-8 overflow-x-hidden relative pt-24 md:pt-28">
-        <header className="fixed top-0 inset-x-0 z-20 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl">
-          <div className="w-full max-w-6xl mx-auto flex justify-between items-center px-4 md:px-8 py-4">
-            <div className="flex items-center gap-3">
-              <img 
-                src="/big_hero_logo.png" 
-                alt="Silicon Smackdown" 
-                className="h-8 md:h-10 w-auto object-contain"
+      <div className="min-h-[100dvh] bg-slate-950 flex flex-col items-center justify-between p-4 md:p-8 overflow-x-hidden relative pt-[4.5rem] md:pt-28 pb-24 md:pb-8">
+        <header className="fixed top-0 inset-x-0 z-20 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl safe-top">
+          <div className="w-full max-w-6xl mx-auto flex justify-between items-center gap-2 px-3 sm:px-8 py-2.5 sm:py-4">
+            {/* Brand */}
+            <div className="flex items-center gap-2 min-w-0">
+              <img
+                src="/big_hero_logo.png"
+                alt="Silicon Smackdown"
+                className="h-7 sm:h-10 w-auto object-contain flex-shrink-0"
               />
-              <div className="flex flex-col">
+              <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-2">
-                  <h1 className="text-heading-primary uppercase italic">
+                  <h1 className="text-sm sm:text-xl font-bold tracking-tighter text-white uppercase italic whitespace-nowrap">
                     Silicon Smackdown
                   </h1>
-                  <span className="px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded">
+                  <span className="hidden sm:inline-flex px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded">
                     Beta
                   </span>
                 </div>
-                <p className="text-mono-small">{t('header.version')}</p>
+                <p className="hidden sm:block text-mono-small">{t('header.version')}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+
+            {/* Actions */}
+            <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
               {selectedRivalryId && !isLive && (
                 <button
                   type="button"
@@ -551,7 +585,7 @@ const App: React.FC = () => {
                     setSelectedGuests([]);
                     saveAppState({ selectedRivalryId: null });
                   }}
-                  className="px-4 py-2 rounded-full border-2 border-slate-700 hover:border-indigo-500 bg-slate-900/40 hover:bg-indigo-500/10 transition-all text-button-secondary text-slate-400 hover:text-indigo-300 flex items-center gap-2"
+                  className="p-2 sm:px-4 sm:py-2 rounded-full border-2 border-slate-700 hover:border-indigo-500 bg-slate-900/40 hover:bg-indigo-500/10 transition-all text-button-secondary text-slate-400 hover:text-indigo-300 flex items-center gap-2"
                   title="Change Rivalry"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -563,7 +597,7 @@ const App: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleLanguageChange('en')}
-                className={`w-10 h-10 rounded-full border-2 transition-all flex items-center justify-center text-3xl hover:scale-110 ${i18n.language === 'en' ? 'border-indigo-500 bg-indigo-500/10 shadow-[0_0_15px_rgba(99,102,241,0.3)]' : 'border-slate-700 hover:border-slate-500 bg-slate-900/40'}`}
+                className={`w-8 h-8 text-xl sm:w-10 sm:h-10 sm:text-3xl rounded-full border-2 transition-all flex items-center justify-center hover:scale-110 ${i18n.language === 'en' ? 'border-indigo-500 bg-indigo-500/10 shadow-[0_0_15px_rgba(99,102,241,0.3)]' : 'border-slate-700 hover:border-slate-500 bg-slate-900/40'}`}
                 title="English"
               >
                 🇬🇧
@@ -571,27 +605,29 @@ const App: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleLanguageChange('el')}
-                className={`w-10 h-10 rounded-full border-2 transition-all flex items-center justify-center text-3xl hover:scale-110 ${i18n.language === 'el' ? 'border-indigo-500 bg-indigo-500/10 shadow-[0_0_15px_rgba(99,102,241,0.3)]' : 'border-slate-700 hover:border-slate-500 bg-slate-900/40'}`}
+                className={`w-8 h-8 text-xl sm:w-10 sm:h-10 sm:text-3xl rounded-full border-2 transition-all flex items-center justify-center hover:scale-110 ${i18n.language === 'el' ? 'border-indigo-500 bg-indigo-500/10 shadow-[0_0_15px_rgba(99,102,241,0.3)]' : 'border-slate-700 hover:border-slate-500 bg-slate-900/40'}`}
                 title="Ελληνικά"
               >
                 🇬🇷
               </button>
+              {selectedRivalryId && (
+                <>
+                  <span className="hidden sm:block">
+                    <LiveApiIndicator status={apiStatus} sessions={geminiSessions.sessions} totalGuests={selectedGuests.length} />
+                  </span>
+                  <button
+                    onClick={isLive ? stopShow : () => startShow()}
+                    className={`px-3 py-1.5 text-[11px] sm:px-8 sm:py-2.5 sm:text-sm rounded-full text-button-primary whitespace-nowrap transition-all shadow-2xl active:scale-95 ${
+                      isLive
+                        ? 'bg-red-600/10 text-red-500 border border-red-500/50 hover:bg-red-600 hover:text-white'
+                        : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-indigo-500/20'
+                    }`}
+                  >
+                    {isLive ? t('controls.shutDown') : t('controls.startDiscussion')}
+                  </button>
+                </>
+              )}
             </div>
-            {selectedRivalryId && (
-              <div className="flex items-center gap-4">
-                <LiveApiIndicator status={apiStatus} sessions={geminiSessions.sessions} totalGuests={selectedGuests.length} />
-                <button
-                  onClick={isLive ? stopShow : () => startShow()}
-                  className={`px-8 py-2.5 rounded-full text-button-primary transition-all shadow-2xl active:scale-95 ${
-                    isLive
-                      ? 'bg-red-600/10 text-red-500 border border-red-500/50 hover:bg-red-600 hover:text-white'
-                      : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-indigo-500/20'
-                  }`}
-                >
-                  {isLive ? t('controls.shutDown') : t('controls.startDiscussion')}
-                </button>
-              </div>
-            )}
           </div>
         </header>
 
@@ -631,7 +667,105 @@ const App: React.FC = () => {
 
         {isLive && (
           <>
-            <main className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-8 flex-1 content-center relative z-10">
+            {/* ---------- MOBILE live layout (both debaters visible, transcript-primary, sticky controls) ---------- */}
+            <div className="md:hidden w-full flex-1 flex flex-col gap-3 relative z-10">
+              <div className="flex gap-2">
+                <GuestChip
+                  guest={selectedGuests[0]}
+                  state={geminiSessions.sessions[selectedGuests[0].id]}
+                  isAwaitingAudio={conversation.state.awaitingAudio[selectedGuests[0].id]}
+                />
+                <GuestChip
+                  guest={selectedGuests[1]}
+                  state={geminiSessions.sessions[selectedGuests[1].id]}
+                  isAwaitingAudio={conversation.state.awaitingAudio[selectedGuests[1].id]}
+                />
+              </div>
+
+              <div className="flex-1 min-h-[42dvh] flex flex-col rounded-2xl overflow-hidden border border-white/5 bg-slate-900/80 backdrop-blur-xl">
+                <div className="px-4 py-2 flex items-center justify-between border-b border-white/5 bg-white/5">
+                  <span className="text-label-secondary">Discussion Log</span>
+                  <span className="text-label-accent text-emerald-400 animate-pulse">
+                    {isFeedPaused ? 'Paused' : 'Live'}
+                  </span>
+                </div>
+                <TranscriptionFeed entries={transcription.transcriptions} fill />
+              </div>
+
+              {/* Sticky control bar — thumb zone */}
+              <div className="sticky bottom-0 safe-bottom z-20 -mx-4 px-4 pt-2 pb-3 bg-slate-950/90 backdrop-blur-xl border-t border-white/5 flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={toggleMicMute}
+                    aria-label={isMicMuted ? 'Unmute microphone' : 'Mute microphone'}
+                    className={`w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border-2 transition-all ${
+                      isMicMuted
+                        ? 'border-red-500 text-red-400 bg-red-900/20'
+                        : 'border-indigo-500 text-indigo-300 bg-indigo-900/20'
+                    }`}
+                  >
+                    {isMicMuted ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 14l4-4m0 4l-4-4" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                      </svg>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handlePlayPauseToggle}
+                    className={`flex-1 h-12 rounded-full text-button-primary border transition flex items-center justify-center gap-2 ${
+                      isFeedPaused
+                        ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400'
+                        : 'border-slate-700 text-slate-200'
+                    }`}
+                  >
+                    {isFeedPaused ? (
+                      <>
+                        <Play className="w-4 h-4" />
+                        <span>{showStarted ? 'Resume' : 'Start Show'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Pause className="w-4 h-4" />
+                        <span>Pause</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={hostInput}
+                    onChange={event => setHostInput(event.target.value)}
+                    onKeyDown={event => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        sendHostMessage();
+                      }
+                    }}
+                    placeholder={t('footer.hostInput.placeholder')}
+                    className="flex-1 min-w-0 rounded-full bg-slate-900/80 border border-slate-700 px-4 py-2.5 text-body-small text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500"
+                    disabled={!isLive}
+                  />
+                  <button
+                    onClick={sendHostMessage}
+                    disabled={!isLive || !hostInput.trim()}
+                    className="flex-shrink-0 px-4 py-2.5 rounded-full text-button-secondary bg-indigo-600 text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {t('footer.hostInput.send')}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* ---------- DESKTOP live layout (unchanged) ---------- */}
+            <main className="hidden md:grid w-full max-w-6xl md:grid-cols-3 gap-8 flex-1 content-center relative z-10">
               <div className={`transition-all duration-700 ${isLive ? 'opacity-100 scale-100' : 'opacity-30 scale-95 pointer-events-none'}`}>
                 <GuestCard
                   guest={selectedGuests[0]}
@@ -693,38 +827,7 @@ const App: React.FC = () => {
                   </div>
                   <button
                     type="button"
-                    onClick={() => {
-                      if (isFeedPaused && !showStarted) {
-                        // First time starting - unpause and trigger first guest to start roasting
-                        setIsFeedPaused(false);
-                        isFeedPausedRef.current = false;
-                        setShowStarted(true);
-                        
-                        // Send prompt to first guest to start the roast battle
-                        const firstGuest = selectedGuests[0];
-                        if (firstGuest) {
-                          const cs = conversation.stateRef.current;
-                          const startPrompt = buildOpeningPrompt({
-                            speaker: firstGuest.name,
-                            rival: selectedGuests[1]?.name ?? 'your rival',
-                            runningGag: cs.runningGag || 'an escalating absurd shared bit',
-                            targetTurns: cs.targetTurns || DEFAULT_TARGET_TURNS,
-                          });
-                          geminiSessions.sendToGuest(firstGuest.id, { text: startPrompt });
-                          console.log(`[App] Show started! Sent opening prompt to ${firstGuest.name}`);
-                        }
-                      } else if (isFeedPaused && showStarted) {
-                        // Resume after pause - just unpause without sending new prompt
-                        setIsFeedPaused(false);
-                        isFeedPausedRef.current = false;
-                        console.log(`[App] Show resumed - conversation continues`);
-                      } else {
-                        // Pause the show
-                        setIsFeedPaused(true);
-                        isFeedPausedRef.current = true;
-                        console.log(`[App] Show paused`);
-                      }
-                    }}
+                    onClick={handlePlayPauseToggle}
                     className={`mt-4 px-6 py-3 rounded-full text-button-primary border transition flex items-center justify-center mx-auto gap-2 ${
                       isFeedPaused 
                         ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.3)]' 
@@ -754,7 +857,7 @@ const App: React.FC = () => {
               </div>
             </main>
 
-            <footer className="w-full max-w-5xl mt-12 group relative z-10">
+            <footer className="hidden md:block w-full max-w-5xl mt-12 group relative z-10">
               <div className="bg-slate-900/80 backdrop-blur-xl rounded-3xl overflow-hidden border border-white/5 shadow-[0_35px_60px_-15px_rgba(0,0,0,0.6)]">
                 <div className="px-6 py-4 border-b border-white/5 flex justify-between items-center bg-white/5">
                   <div className="flex items-center gap-3">
@@ -810,8 +913,10 @@ const App: React.FC = () => {
         </div>
         <audio ref={laughAudioRef} src="/laughter-short.mp3" preload="auto" />
 
-        {/* Footer */}
-        <Footer />
+        {/* Footer — hidden on mobile during a live show (sticky control bar replaces it) */}
+        <div className={isLive ? 'hidden md:block' : 'contents'}>
+          <Footer />
+        </div>
       </div>
     </>
   );

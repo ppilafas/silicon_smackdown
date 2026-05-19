@@ -4,9 +4,12 @@ import { TranscriptionEntry } from '../types';
 
 interface TranscriptionFeedProps {
   entries: TranscriptionEntry[];
+  // When true, the feed fills its flex parent instead of a fixed 300px cap
+  // (used by the mobile layout where the transcript is the primary surface).
+  fill?: boolean;
 }
 
-export const TranscriptionFeed: React.FC<TranscriptionFeedProps> = ({ entries }) => {
+export const TranscriptionFeed: React.FC<TranscriptionFeedProps> = ({ entries, fill = false }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -16,10 +19,10 @@ export const TranscriptionFeed: React.FC<TranscriptionFeedProps> = ({ entries })
   }, [entries]);
 
   return (
-    <div 
+    <div
       ref={scrollRef}
       className="flex-1 overflow-y-auto space-y-4 p-4 scroll-smooth border-t border-slate-800 bg-slate-900/50 backdrop-blur-sm"
-      style={{ maxHeight: '300px' }}
+      style={fill ? undefined : { maxHeight: '300px' }}
     >
       {entries.length === 0 ? (
         <div className="text-center text-body-small italic mt-8">

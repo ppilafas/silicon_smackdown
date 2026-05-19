@@ -41,9 +41,9 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
     <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center px-4 py-10 md:p-8 overflow-x-hidden overflow-y-auto">
       {/* Animated background glow */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-600/20 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute top-1/3 left-1/3 w-[400px] h-[400px] bg-rose-500/10 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute bottom-1/3 right-1/3 w-[300px] h-[300px] bg-emerald-500/10 rounded-full blur-[80px] animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[420px] sm:w-[800px] sm:h-[800px] bg-indigo-600/20 rounded-full blur-[80px] sm:blur-[120px] animate-pulse" />
+        <div className="hidden sm:block absolute top-1/3 left-1/3 w-[400px] h-[400px] bg-rose-500/10 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="hidden sm:block absolute bottom-1/3 right-1/3 w-[300px] h-[300px] bg-emerald-500/10 rounded-full blur-[80px] animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
 
       {/* Content */}
@@ -66,7 +66,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         </div>
 
         {/* Subtitle */}
-        <p className="text-slate-300 text-[11px] sm:text-xs md:text-sm uppercase tracking-[0.35em] mb-3 animate-fade-in-delay-1 flex items-center justify-center gap-2 font-medium">
+        <p className="text-slate-300 text-[11px] sm:text-xs md:text-sm uppercase tracking-[0.2em] sm:tracking-[0.35em] mb-3 animate-fade-in-delay-1 flex items-center justify-center gap-2 font-medium">
           <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-sparkle" />
           {t('splash.subtitle')}
           <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-sparkle" style={{ animationDelay: '0.3s' }} />
@@ -206,10 +206,10 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
       {/* Animated particles */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {[...Array(30)].map((_, i) => (
+        {[...Array(12)].map((_, i) => (
           <div
             key={i}
-            className={`absolute rounded-full animate-float ${i % 3 === 0 ? 'w-2 h-2 bg-indigo-500/40' : i % 3 === 1 ? 'w-1 h-1 bg-rose-500/30' : 'w-1.5 h-1.5 bg-emerald-500/30'}`}
+            className={`absolute rounded-full animate-float ${i >= 6 ? 'hidden sm:block ' : ''}${i % 3 === 0 ? 'w-2 h-2 bg-indigo-500/40' : i % 3 === 1 ? 'w-1 h-1 bg-rose-500/30' : 'w-1.5 h-1.5 bg-emerald-500/30'}`}
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
@@ -221,7 +221,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
       </div>
 
       {/* Orbiting elements */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] pointer-events-none">
+      <div className="hidden sm:block absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] pointer-events-none">
         <div className="absolute inset-0 animate-orbit">
           <Sparkles className="absolute top-0 left-1/2 -translate-x-1/2 w-4 h-4 text-indigo-400/50" />
         </div>

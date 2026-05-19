@@ -12,12 +12,16 @@ interface GuestSelectorProps {
 export const GuestSelector: React.FC<GuestSelectorProps> = ({ onStart }) => {
   const { t } = useTranslation();
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-5xl mb-8">
+    <div className="w-full max-w-5xl mb-8">
+      <h2 className="text-heading-secondary text-center mb-4 sm:mb-6">
+        {t('guestSelector.pick', { defaultValue: 'Pick a rivalry to start' })}
+      </h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
       {RIVALRIES.map((rivalry) => (
         <button
           key={rivalry.id}
           onClick={() => onStart(rivalry)}
-          className="relative group p-6 rounded-2xl border text-left transition-all duration-300 hover:scale-[1.02] bg-slate-900/40 border-white/10 hover:border-indigo-500/60 hover:bg-slate-800/60 hover:shadow-[0_0_30px_-10px_rgba(99,102,241,0.35)]"
+          className="relative group p-4 sm:p-6 rounded-2xl border text-left transition-all duration-300 hover:scale-[1.02] bg-slate-900/40 border-white/10 hover:border-indigo-500/60 hover:bg-slate-800/60 hover:shadow-[0_0_30px_-10px_rgba(99,102,241,0.35)]"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
 
@@ -25,7 +29,7 @@ export const GuestSelector: React.FC<GuestSelectorProps> = ({ onStart }) => {
             {t(`rivalries.${rivalry.id}.name`, { defaultValue: rivalry.name })}
           </h3>
 
-          <p className="text-body-small mb-6 min-h-[40px]">
+          <p className="text-body-small mb-4 sm:mb-6 line-clamp-2 sm:min-h-[40px]">
             {t(`rivalries.${rivalry.id}.description`, { defaultValue: rivalry.description })}
           </p>
 
@@ -49,6 +53,7 @@ export const GuestSelector: React.FC<GuestSelectorProps> = ({ onStart }) => {
           </div>
         </button>
       ))}
+      </div>
     </div>
   );
 };
