@@ -26,8 +26,14 @@ interface GuestCardProps {
 
 export const GuestCard: React.FC<GuestCardProps> = ({ guest, state, analyserNode, isAwaitingAudio }) => {
   const { t } = useTranslation();
-  const [avatarUrl, setAvatarUrl] = useState<string>('');
-  const [fallbackUrl, setFallbackUrl] = useState<string>('');
+  // Resolve synchronously so the first paint never has an empty src
+  // (which made React warn and triggered a redundant page fetch).
+  const [avatarUrl, setAvatarUrl] = useState<string>(() => {
+    try { return getAvatarUrl(guest.name); } catch { return ''; }
+  });
+  const [fallbackUrl, setFallbackUrl] = useState<string>(() => {
+    try { return getFallbackAvatarUrl(guest.name); } catch { return ''; }
+  });
   const [avatarError, setAvatarError] = useState<boolean>(false);
   const [thinkingMessage, setThinkingMessage] = useState<string>(THINKING_MESSAGES[0]);
   
@@ -82,9 +88,9 @@ export const GuestCard: React.FC<GuestCardProps> = ({ guest, state, analyserNode
         <div className={`relative mb-8 w-28 h-28 rounded-full overflow-hidden border-4 transition-all duration-500 ${
           isSpeaking ? 'border-emerald-400 scale-105 ring-8 ring-emerald-500/10' : 'border-slate-800'
         } ${error ? 'border-red-500 animate-pulse' : ''} ${isThinking ? 'animate-thinking-wobble border-amber-400/60' : ''}`}>
-          {!avatarError ? (
-            <img 
-              src={avatarUrl} 
+          {!avatarError && avatarUrl ? (
+            <img
+              src={avatarUrl}
               alt={`${guest.name} avatar`}
               className="w-full h-full object-cover"
               onLoad={() => console.log(`Avatar loaded for ${guest.name}`)}

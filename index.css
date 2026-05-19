@@ -1,4 +1,6 @@
-/* Tailwind CDN handles base styling */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* ============================================
    TYPOGRAPHY SYSTEM
