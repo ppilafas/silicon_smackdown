@@ -674,7 +674,7 @@ const App: React.FC = () => {
         />
       )}
 
-      <div className={`min-h-[100dvh] bg-slate-950 flex flex-col items-center justify-between p-4 md:p-8 overflow-x-hidden relative pt-[4.5rem] md:pt-28 md:pb-8 ${isLive ? 'pb-3' : 'pb-24'}`}>
+      <div className={`min-h-[100dvh] bg-slate-950 flex flex-col items-center justify-between p-4 md:p-8 overflow-x-hidden relative pt-[4.5rem] md:pt-28 md:pb-20 ${isLive ? 'pb-3' : 'pb-24'}`}>
         <header className="fixed top-0 inset-x-0 z-20 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl safe-top">
           <div className="w-full max-w-6xl mx-auto flex justify-between items-center gap-2 px-3 sm:px-8 py-2.5 sm:py-4">
             {/* Brand */}
@@ -989,7 +989,7 @@ const App: React.FC = () => {
               </div>
             </main>
 
-            <footer className="hidden md:block w-full max-w-5xl mt-12 group relative z-10">
+            <footer className="hidden md:block w-full max-w-5xl mt-12 mb-12 group relative z-10">
               <div className="bg-slate-900/80 backdrop-blur-xl rounded-3xl overflow-hidden border border-white/5 shadow-[0_35px_60px_-15px_rgba(0,0,0,0.6)]">
                 <div className="px-6 py-4 border-b border-white/5 flex justify-between items-center gap-3 bg-white/5">
                   <div className="flex items-center gap-3">

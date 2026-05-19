@@ -91,7 +91,7 @@ export const TranscriptionFeed: React.FC<TranscriptionFeedProps> = ({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className={`feed-scroll flex-1 overflow-y-auto px-4 py-4 scroll-smooth bg-slate-900/50 backdrop-blur-sm ${
+        className={`feed-scroll flex-1 overflow-y-auto px-4 pt-4 pb-8 scroll-smooth bg-slate-900/50 backdrop-blur-sm ${
           fill ? '' : 'max-h-[55vh] min-h-[220px]'
         }`}
       >
@@ -148,13 +148,6 @@ export const TranscriptionFeed: React.FC<TranscriptionFeedProps> = ({
                     {entry.text}
                     {entry.isStreaming && <span className="animate-pulse ml-0.5">▌</span>}
                   </div>
-                  {entry.laughed && !entry.isStreaming && (
-                    <div className="self-center my-1 text-[10px] uppercase tracking-widest text-amber-400/70 flex items-center gap-1.5">
-                      <span className="h-px w-6 bg-amber-400/20" />
-                      😂 audience laughs
-                      <span className="h-px w-6 bg-amber-400/20" />
-                    </div>
-                  )}
                 </div>
               );
             })}
