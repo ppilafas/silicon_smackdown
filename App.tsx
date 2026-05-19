@@ -551,7 +551,7 @@ const App: React.FC = () => {
         />
       )}
 
-      <div className="min-h-[100dvh] bg-slate-950 flex flex-col items-center justify-between p-4 md:p-8 overflow-x-hidden relative pt-[4.5rem] md:pt-28 pb-24 md:pb-8">
+      <div className={`min-h-[100dvh] bg-slate-950 flex flex-col items-center justify-between p-4 md:p-8 overflow-x-hidden relative pt-[4.5rem] md:pt-28 md:pb-8 ${isLive ? 'pb-3' : 'pb-24'}`}>
         <header className="fixed top-0 inset-x-0 z-20 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl safe-top">
           <div className="w-full max-w-6xl mx-auto flex justify-between items-center gap-2 px-3 sm:px-8 py-2.5 sm:py-4">
             {/* Brand */}
@@ -682,18 +682,8 @@ const App: React.FC = () => {
                 />
               </div>
 
-              <div className="flex-1 min-h-[42dvh] flex flex-col rounded-2xl overflow-hidden border border-white/5 bg-slate-900/80 backdrop-blur-xl">
-                <div className="px-4 py-2 flex items-center justify-between border-b border-white/5 bg-white/5">
-                  <span className="text-label-secondary">Discussion Log</span>
-                  <span className="text-label-accent text-emerald-400 animate-pulse">
-                    {isFeedPaused ? 'Paused' : 'Live'}
-                  </span>
-                </div>
-                <TranscriptionFeed entries={transcription.transcriptions} fill />
-              </div>
-
-              {/* Sticky control bar — thumb zone */}
-              <div className="sticky bottom-0 safe-bottom z-20 -mx-4 px-4 pt-2 pb-3 bg-slate-950/90 backdrop-blur-xl border-t border-white/5 flex flex-col gap-2">
+              {/* Controls — above the conversation history */}
+              <div className="rounded-2xl border border-white/5 bg-slate-950/70 p-3 flex flex-col gap-2">
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -761,6 +751,16 @@ const App: React.FC = () => {
                     {t('footer.hostInput.send')}
                   </button>
                 </div>
+              </div>
+
+              <div className="flex-1 min-h-[42dvh] flex flex-col rounded-2xl overflow-hidden border border-white/5 bg-slate-900/80 backdrop-blur-xl safe-bottom">
+                <div className="px-4 py-2 flex items-center justify-between border-b border-white/5 bg-white/5">
+                  <span className="text-label-secondary">Discussion Log</span>
+                  <span className="text-label-accent text-emerald-400 animate-pulse">
+                    {isFeedPaused ? 'Paused' : 'Live'}
+                  </span>
+                </div>
+                <TranscriptionFeed entries={transcription.transcriptions} fill />
               </div>
             </div>
 
