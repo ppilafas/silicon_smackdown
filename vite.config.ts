@@ -70,6 +70,40 @@ function vercelApiDev(env: Record<string, string>): Plugin {
   };
 }
 
+// Dev-only: receive batched browser console lines and print them to the
+// `npm run dev` terminal, so the (client-side) debate/session logs are
+// visible without keeping devtools open. Never runs in production.
+function clientLogBridge(): Plugin {
+  const COLOR = { error: '\x1b[31m', warn: '\x1b[33m', log: '\x1b[36m' } as const;
+  return {
+    name: 'client-log-bridge',
+    apply: 'serve',
+    configureServer(server: ViteDevServer) {
+      server.middlewares.use((req, res, next) => {
+        if (req.method !== 'POST' || req.url !== '/__log') return next();
+        let raw = '';
+        req.on('data', c => (raw += c));
+        req.on('end', () => {
+          try {
+            const { lines } = JSON.parse(raw || '{}') as {
+              lines?: { level: 'log' | 'warn' | 'error'; msg: string }[];
+            };
+            for (const l of lines || []) {
+              const c = COLOR[l.level] || COLOR.log;
+              // eslint-disable-next-line no-console
+              console.log(`\x1b[2m[browser]\x1b[0m ${c}${l.level.toUpperCase()}\x1b[0m ${l.msg}`);
+            }
+          } catch {
+            /* ignore malformed batches */
+          }
+          res.statusCode = 204;
+          res.end();
+        });
+      });
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
@@ -77,7 +111,7 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       host: '0.0.0.0',
     },
-    plugins: [react(), vercelApiDev(env)],
+    plugins: [react(), vercelApiDev(env), clientLogBridge()],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
