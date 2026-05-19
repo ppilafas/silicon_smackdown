@@ -112,6 +112,14 @@ const App: React.FC = () => {
   const turnTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isStartingRef = useRef(false); // guards against double-start (rapid card clicks)
 
+  // Synchronous source of truth for who is on-mic. conversation.stateRef
+  // lags behind dispatches (React commits later), so a cut-off speaker's
+  // in-flight WS chunks would still be processed for a few frames. These
+  // refs are updated imperatively the instant we switch, so stale chunks
+  // are dropped immediately and "STARTED speaking" fires once per turn.
+  const activeGuestIdRef = useRef<string | null>(null);
+  const speakingGuestIdRef = useRef<string | null>(null);
+
   // Tracks how much of the speaking guest's transcript has already been
   // streamed into the rival's session as warm context (see primeRival).
   const primeRef = useRef<{ speakerId: string | null; primedLen: number; lastPrimeAt: number }>({
@@ -127,17 +135,27 @@ const App: React.FC = () => {
   const transcription = useTranscription();
   const audio = useAudioPipeline();
 
+  // Switch the on-mic guest. Updates the synchronous refs FIRST (so the
+  // previous speaker's in-flight chunks are dropped this instant) then the
+  // reducer.
+  const setActiveGuestSync = useCallback((id: string) => {
+    activeGuestIdRef.current = id;
+    speakingGuestIdRef.current = null; // fresh turn — not speaking yet
+    conversation.actions.setActiveGuest(id);
+  }, [conversation]);
+
   // Session message handler
   const handleSessionMessage = useCallback((guestId: string, message: LiveServerMessage) => {
     const speakerName = selectedGuests.find(g => g.id === guestId)?.name || 'Guest';
     const convState = conversation.stateRef.current;
 
-    // Only process messages from the active guest
-    if (guestId !== convState.activeGuestId) {
-      if (message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data ||
-          message.serverContent?.turnComplete) {
-        return; // Silently ignore non-active guest
-      }
+    // Hard guard: use the synchronous ref (falls back to reducer state before
+    // the first turn). A guest that was just cut off is no longer the active
+    // id here, so ALL of its still-streaming serverContent is dropped
+    // immediately — no audio blip, no stale transcription, no double-trigger.
+    const activeId = activeGuestIdRef.current ?? convState.activeGuestId;
+    if (guestId !== activeId && message.serverContent) {
+      return;
     }
 
     // Skip processing if feed is paused
@@ -226,7 +244,7 @@ const App: React.FC = () => {
       // Switch to other guest and prompt them
       const otherGuest = selectedGuests.find(g => g.id !== guestId);
       if (otherGuest) {
-        conversation.actions.setActiveGuest(otherGuest.id);
+        setActiveGuestSync(otherGuest.id);
 
         // Flush any transcript not yet primed into the rival, then reset so
         // the next speaker's priming starts fresh.
@@ -287,8 +305,10 @@ const App: React.FC = () => {
     if (base64Audio) {
       conversation.actions.setAwaitingAudio(guestId, false);
       
-      // Mark that active guest is now speaking
-      if (!convState.isGuestSpeaking) {
+      // Mark that active guest is now speaking — guard on the synchronous
+      // ref so rapid audio chunks don't re-fire this once per chunk.
+      if (speakingGuestIdRef.current !== guestId) {
+        speakingGuestIdRef.current = guestId;
         conversation.actions.guestStartedSpeaking(guestId);
         console.log(`[App] ${speakerName} STARTED speaking`);
 
@@ -314,7 +334,7 @@ const App: React.FC = () => {
       audio.stopGuestAudio(guestId);
       geminiSessions.updateSessionSpeaking(guestId, false);
     }
-  }, [selectedGuests, conversation, transcription, audio]);
+  }, [selectedGuests, conversation, transcription, audio, setActiveGuestSync]);
 
   // Gemini sessions hook
   const geminiSessions = useGeminiSessions({
@@ -503,7 +523,7 @@ const App: React.FC = () => {
     const phase = phaseForTurn(nextTurnIndex, cs.targetTurns);
     const pointsDigest = summarizePoints(cs.pointsMade);
     conversation.actions.advanceTurn(''); // advance arc, don't log host words as a "point"
-    conversation.actions.setActiveGuest(nextGuest.id);
+    setActiveGuestSync(nextGuest.id);
     conversation.actions.setAwaitingAudio(nextGuest.id, true);
     conversation.actions.clearHostInstruction(); // consumed by this cut-in
 
@@ -518,7 +538,7 @@ const App: React.FC = () => {
     });
     console.log(`[App] Host cut-in → ${nextGuest.name}`);
     geminiSessions.triggerGuest(nextGuest.id, prompt);
-  }, [hostInput, isLive, showStarted, selectedGuests, transcription, conversation, geminiSessions, audio]);
+  }, [hostInput, isLive, showStarted, selectedGuests, transcription, conversation, geminiSessions, audio, setActiveGuestSync]);
 
   const shouldTriggerLaughter = (text: string) => {
     if (!text.trim()) return false;
@@ -593,6 +613,8 @@ const App: React.FC = () => {
 
     // Reset conversation state and seed the debate arc (running gag + length)
     conversation.actions.reset(guests[0].id);
+    activeGuestIdRef.current = guests[0].id;
+    speakingGuestIdRef.current = null;
     conversation.actions.configureDebate(DEFAULT_TARGET_TURNS, pickRunningGag(gagSeed));
 
     console.log(`[App] Show started - Active Guest: ${guests[0].name} (Paused, waiting for user to start)`);
@@ -626,6 +648,8 @@ const App: React.FC = () => {
     setIsLive(false);
     setShowStarted(false);
     setIsFeedPaused(false);
+    activeGuestIdRef.current = null;
+    speakingGuestIdRef.current = null;
 
     if (turnTimeoutRef.current) {
       clearTimeout(turnTimeoutRef.current);
