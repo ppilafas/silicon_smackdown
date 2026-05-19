@@ -32,6 +32,41 @@ import {
 
 type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
+// Compact live status for the discussion-log header: turn N/M, current
+// debate phase, and a live/paused dot + thin progress bar.
+const DebateStatus: React.FC<{
+  turnIndex: number;
+  targetTurns: number;
+  paused: boolean;
+}> = ({ turnIndex, targetTurns, paused }) => {
+  const phase = phaseForTurn(turnIndex, targetTurns);
+  const pct = Math.min(100, Math.round((turnIndex / Math.max(1, targetTurns)) * 100));
+  return (
+    <div className="flex items-center gap-2.5 min-w-0">
+      <span className="text-label-accent text-slate-400 tabular-nums whitespace-nowrap">
+        Turn {Math.min(turnIndex + 1, targetTurns)}/{targetTurns}
+      </span>
+      <span className="text-label-accent text-indigo-300 uppercase tracking-wider hidden sm:inline">
+        {phase}
+      </span>
+      <span className="w-12 h-1 rounded-full bg-slate-700 overflow-hidden hidden sm:block">
+        <span
+          className="block h-full bg-indigo-500 transition-all duration-700"
+          style={{ width: `${pct}%` }}
+        />
+      </span>
+      <span
+        className={`flex items-center gap-1 text-label-accent whitespace-nowrap ${
+          paused ? 'text-amber-400' : 'text-emerald-400'
+        }`}
+      >
+        <span className={`w-1.5 h-1.5 rounded-full ${paused ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`} />
+        {paused ? 'Paused' : 'Live'}
+      </span>
+    </div>
+  );
+};
+
 const App: React.FC = () => {
   const { t, i18n } = useTranslation();
   
@@ -142,6 +177,7 @@ const App: React.FC = () => {
 
         if (shouldLaugh) {
           triggerAudienceLaughter();
+          transcription.markStreamingLaughed(guestId);
         }
 
         // Warm the rival's context with what this guest is saying, while
@@ -780,13 +816,15 @@ const App: React.FC = () => {
               </div>
 
               <div className="flex-1 min-h-[42dvh] flex flex-col rounded-2xl overflow-hidden border border-white/5 bg-slate-900/80 backdrop-blur-xl safe-bottom">
-                <div className="px-4 py-2 flex items-center justify-between border-b border-white/5 bg-white/5">
-                  <span className="text-label-secondary">Discussion Log</span>
-                  <span className="text-label-accent text-emerald-400 animate-pulse">
-                    {isFeedPaused ? 'Paused' : 'Live'}
-                  </span>
+                <div className="px-3 py-2 flex items-center justify-between gap-2 border-b border-white/5 bg-white/5">
+                  <span className="text-label-secondary flex-shrink-0">Discussion</span>
+                  <DebateStatus
+                    turnIndex={conversation.state.turnIndex}
+                    targetTurns={conversation.state.targetTurns}
+                    paused={isFeedPaused}
+                  />
                 </div>
-                <TranscriptionFeed entries={transcription.transcriptions} fill />
+                <TranscriptionFeed entries={transcription.transcriptions} guests={selectedGuests} fill />
               </div>
             </div>
 
@@ -885,7 +923,7 @@ const App: React.FC = () => {
 
             <footer className="hidden md:block w-full max-w-5xl mt-12 group relative z-10">
               <div className="bg-slate-900/80 backdrop-blur-xl rounded-3xl overflow-hidden border border-white/5 shadow-[0_35px_60px_-15px_rgba(0,0,0,0.6)]">
-                <div className="px-6 py-4 border-b border-white/5 flex justify-between items-center bg-white/5">
+                <div className="px-6 py-4 border-b border-white/5 flex justify-between items-center gap-3 bg-white/5">
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1.5">
                       <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
@@ -895,7 +933,11 @@ const App: React.FC = () => {
                     <span className="text-label-secondary">Global Discussion Log</span>
                   </div>
                   {isLive && (
-                    <span className="text-label-accent text-emerald-400 animate-pulse">Syncing Live Conversation...</span>
+                    <DebateStatus
+                      turnIndex={conversation.state.turnIndex}
+                      targetTurns={conversation.state.targetTurns}
+                      paused={isFeedPaused}
+                    />
                   )}
                 </div>
                 <div className="px-6 py-4 border-b border-white/5 bg-slate-900/60">
@@ -927,7 +969,7 @@ const App: React.FC = () => {
                     </button>
                   </div>
                 </div>
-                <TranscriptionFeed entries={transcription.transcriptions} />
+                <TranscriptionFeed entries={transcription.transcriptions} guests={selectedGuests} />
               </div>
             </footer>
           </>

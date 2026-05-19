@@ -31,6 +31,7 @@ export interface TranscriptionEntry {
   timestamp: number;
   type: 'user' | 'ai';
   isStreaming?: boolean;  // True while the speaker is still talking
+  laughed?: boolean;      // The audience laughed during/at this line
 }
 
 export interface LiveSessionState {

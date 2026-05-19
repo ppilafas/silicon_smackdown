@@ -96,6 +96,15 @@ export function useTranscription() {
     }
   }, []);
 
+  // Flag the speaker's current streaming entry as having drawn a laugh.
+  const markStreamingLaughed = useCallback((speakerId: string) => {
+    const entryId = streamingEntryIdRef.current[speakerId];
+    if (!entryId) return;
+    setTranscriptions(prev =>
+      prev.map(e => (e.id === entryId && !e.laughed ? { ...e, laughed: true } : e))
+    );
+  }, []);
+
   // Accumulate text for a speaker (used for relay)
   const accumulateText = useCallback((speakerId: string, text: string) => {
     accumulatedTextRef.current[speakerId] = 
@@ -124,6 +133,7 @@ export function useTranscription() {
     addTranscription,
     updateStreamingTranscription,
     finalizeStreamingTranscription,
+    markStreamingLaughed,
     accumulateText,
     getAccumulatedText,
     clearAccumulatedText,
