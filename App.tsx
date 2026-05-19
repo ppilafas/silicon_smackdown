@@ -251,13 +251,20 @@ const App: React.FC = () => {
         const pointsDigest = summarizePoints([...convState.pointsMade, point]);
         conversation.actions.advanceTurn(point);
 
+        // A host message sent mid-turn lands in pendingHostInstruction and is
+        // only promoted to lastHostInstruction by the reducer AFTER this
+        // snapshot was taken — so read both, else it's silently dropped.
+        const hostMsg = (
+          convState.pendingHostInstruction || convState.lastHostInstruction || ''
+        ).trim();
+
         const prompt = buildTriggerPrompt({
           speaker: otherGuest.name,
           phase,
           turnIndex: nextTurnIndex,
           targetTurns: convState.targetTurns,
           runningGag: convState.runningGag || 'an escalating absurd shared bit',
-          hostInstruction: convState.lastHostInstruction || undefined,
+          hostInstruction: hostMsg || undefined,
           pointsDigest,
         });
 
@@ -267,9 +274,10 @@ const App: React.FC = () => {
         conversation.actions.setAwaitingAudio(otherGuest.id, true);
         geminiSessions.triggerGuest(otherGuest.id, prompt);
 
-        // Clear host instruction after use
-        if (convState.lastHostInstruction) {
-          setTimeout(() => conversation.actions.clearHostInstruction(), 5000);
+        // Delivered in this turn's trigger — clear deterministically so it
+        // doesn't repeat next turn and isn't wiped by a blind timeout first.
+        if (hostMsg) {
+          conversation.actions.clearHostInstruction();
         }
       }
     }
@@ -468,13 +476,12 @@ const App: React.FC = () => {
     conversation.actions.hostSentMessage(message);
     setHostInput('');
 
-    const convState = conversation.stateRef.current;
-    const activeGuestId = convState.activeGuestId ?? selectedGuests[0]?.id;
-    
-    if (activeGuestId && !convState.isGuestSpeaking) {
-      geminiSessions.sendToGuest(activeGuestId, { text: `[Host said]: "${message}"` });
-    }
-  }, [hostInput, isLive, selectedGuests, transcription, conversation, geminiSessions]);
+    // The instruction is queued in conversation state and injected into the
+    // next turn's trigger on the ordered sendClientContent channel (see the
+    // turnComplete handler). We intentionally do NOT also push it via
+    // sendRealtimeInput here — that raced the ordered turn flow and was the
+    // reason host prompts got dropped.
+  }, [hostInput, isLive, transcription, conversation]);
 
   const shouldTriggerLaughter = (text: string) => {
     if (!text.trim()) return false;
